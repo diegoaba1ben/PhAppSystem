@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  phappgateway:
+    image: phappgateway:latest
+    build:
+      context: .
+      dockerfile: PhAppGateway/Dockerfile
+    ports:
+      - "5000:80"
+      - "5001:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+    depends_on:
+      - phappsecurity
+      - phappuser
+      - db
+
+  phappsecurity:
+    image: phappsecurity:latest
+    build:
+      context: .
+      dockerfile: PhAppSecurity/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+
+  phappuser:
+    image: phappuser:latest
+    build:
+      context: .
+      dockerfile: PhAppUser/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ""
+      MYSQL_DATABASE: PhorizontalDb
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ""
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+
+volumes:
+  dbdata:
+

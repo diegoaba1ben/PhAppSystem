@@ -1,0 +1,74 @@
+# Archivos y directorios que no deben ser versionados
+
+# .gitignore
+# Archivos y directorios de ASP.NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.sln
+*.csproj.user
+*.ncrunchsolution
+
+# Archivos específicos del editor
+.idea/
+.vscode/
+*.swp
+
+# Archivos de compilación y distribución
+node_modules/
+dist/
+build/
+
+# Archivos de registro y salida
+*.log
+logs/
+*.log
+*.exe
+*.dll
+npm-debug.log*
+yarn-debug.log*
+
+# Entornos
+.env
+.env.local
+.env.*local
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Compilación y caché
+*.cache
+*.class
+*.pyc
+npm-cache
+node_modules
+
+# Archivos temporales
+*.tmp
+*.bak
+*.old
+*~
+*.swp
+.DS_Store
+
+# Archivos de bases de datos (relevantes)
+*.db
+*.sqlite3
+*.log
+*.sql
+pg_data/
+
+# Archivos de configuración local
+appsettings.Development.json
+local.settings.json
+
+#Archivos de configuración de publicación
+publish/
+*.publish.xml
+
+# Archivos de paquete NuGet
+*.nupkg
+packages/

@@ -1,15 +1,38 @@
+using PhAppUser.Infrastructure.Context;
+using Microsoft.EntityFrameworkCore;
+using FluentValidation;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Agregar servicios al contenedor.
+// Configuración de servicios
 builder.Services.AddControllers();
-
-// Configurar Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Configurar el contexto de la base de datos con MySQL y Pomelo
+builder.Services.AddDbContext<PhAppUserDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"), 
+        new MySqlServerVersion(new Version(8, 0, 23)) 
+    ));
+
+// Registrar repositorios
+
+// Configuración de CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
+
+// Configuración de FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
 var app = builder.Build();
 
-// Configurar el uso de Swagger en entorno de desarrollo
+// Configuración de Swagger en desarrollo
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -18,6 +41,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
+app.UseCors("AllowAllOrigins");
 app.MapControllers();
 
 app.Run();
+
+
+

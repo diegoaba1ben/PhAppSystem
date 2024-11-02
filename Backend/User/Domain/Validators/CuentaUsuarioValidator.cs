@@ -35,6 +35,17 @@ namespace PhAppUser.Domain.Validators
                 .NotEmpty().WithMessage("El campo dirección es requerido")
                 .Length(5, 100).WithMessage("El campo dirección debe tener entre 5 y 100 caracteres.")
                 .Matches(@"^[a-zA-Z0-9\s]+$").WithMessage("El campo dirección solo acepta números y letras");
+            RuleFor(cu => cu.Ciudad)
+                .NotEmpty().WithMessage("El campo Ciudad es requerido")
+                .Length(3, 60).WithMessage("El campo Ciudad debe tener entre 3 y 60  caracteres")
+                .Matches(@"^[a-zA-Z\s]+$").WithMessage("El campCiudad solo acepta letras");
+            RuleFor(cu => cu.Telefono)
+                .NotEmpty().WithMessage("El campo Teléfono  es requerido")
+                .Length(7, 20).WithMessage("El campo Teléfono debe tener entre  7 y 20 caracteres")
+                .Matches(@"^\d+$").WithMessage("El campo Teléfono solo acepta números");
+            RuleFor(cu => cu.Email)
+                .NotEmpty().WithMessage("El correo electrónico es requerido")
+                .EmailAddress().WithMessage("El correo electrónico es no válido.");
             #endregion
 
             #region Validaciones aplicables a los atributos de estado de un usuario
@@ -49,7 +60,7 @@ namespace PhAppUser.Domain.Validators
                 .WithMessage("La fecha de inactivación no puede ser menor a la fecha actual.");
             #endregion
 
-            #region Validaciones para los atributos de login
+            #region Validaciones para los atributos de loggin
             RuleFor(cu => cu.NombreUsuario)
                 .NotEmpty().WithMessage("El campo Nombre de usuario es requerido");
                 
@@ -57,18 +68,18 @@ namespace PhAppUser.Domain.Validators
                 .NotEmpty().WithMessage("El campo Password es requerido.")
                 .Length(8, 20).WithMessage("La contraseña debe contener entre 8 y 20 caracteres")
                 .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$")
-                .WithMessage("La contraseña debe tener entre 8 y 20 caracteres, con al menos una letra minúscula, una mayúscula, un número y un carácter especial, y no debe contener espacios en blanco.");
+                .WithMessage("La contraseña debe al menos una letra minúscula, una mayúscula, un número y un carácter especial.");
             #endregion
 
             #region Validaciones para determinar el tipo de usuario
             RuleFor(cu => cu.TarjProf)
                 .NotEmpty().When(cu => cu.TipoCuenta == TipoCuenta.Contador)
                 .WithMessage("Debe ingresar la tarjeta profesional cuando el usuario es un Contador y debe tener entre 5 y 20 caracteres")
-                .Length(5, 20)
+                .Length(5, 20).When (cu => cu.TipoCuenta == TipoCuenta.Contador)
                 .Matches(@"^[a-zA-Z0-9]+$").WithMessage("El atributo solo puede contener letras y números");
             #endregion
 
-            #region Validaciones para el manejor del tipo de contrato y obligaciones tributarias
+            #region Validaciones para el manejar del tipo de contrato y obligaciones tributarias
             RuleFor(cu => cu.TipoContrato)
                 .NotNull().WithMessage("El tipo de contrato es requerido")
                 .IsInEnum().WithMessage("El tipo de contrato no es válido");

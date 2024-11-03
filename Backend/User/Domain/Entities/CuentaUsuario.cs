@@ -54,6 +54,11 @@ namespace PhAppUser.Domain.Entities
         public DateTime FechaCreacion { get; internal set; } = DateTime.Now;
         #endregion
 
+        // Navegación inversa a Perfiles (uno a muchos)
+        public ICollection<Perfil> Perfiles { get; internal set; } = new List<Perfil>();
+
+        
+
         // Constructor privado para forzar el uso del builder
         internal CuentaUsuario() { }
 
@@ -213,6 +218,7 @@ namespace PhAppUser.Domain.Entities
             // Constructor final para construir la instancia
             public CuentaUsuario Build()
             {
+                
                 return _usuario;
             }
            

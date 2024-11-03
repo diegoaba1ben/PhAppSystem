@@ -15,7 +15,7 @@ namespace PhAppUser.Domain.Validators
             RuleFor(r => r.CertLegal)
                 .NotEmpty().WithMessage("El número de radicación de la certificación legal es requerido")
                 .Length(3, 12).WithMessage("El campo CertLegal debe tener entre 3 y 12 caracteres")
-                .Matches(@"^\d+$").WithMessage("El número de radicación de la certificación legal debe ser numérico");
+                .Matches(@"^\d+$").WithMessage("El campo de radicación de la certificación legal debe ser numérico");
 
             RuleFor(r => r.FechaInicio)
                 .NotEmpty().WithMessage("La fecha de inicio de la representación legal es requerida")
@@ -23,7 +23,7 @@ namespace PhAppUser.Domain.Validators
 
             RuleFor(r => r.FechaFinal)
                 .NotEmpty().WithMessage("La fecha de vencimiento de la representación legal es requerida")
-                .Must(BeAValidISO8601Date).WithMessage("La fecha final de la representación legal debe estar en formato ISO 8601 (yyyy-MM-dd, yyyy-MM-ddTHH:mm, yyyy-MM-ddTHH:mm:ss)");
+                .Must(BeAValidISO8601Date).WithMessage("La fecha final de la representación legal debe estar en formato ISO 8601 (yyyy-MM-dd, yyyy-MM-ddTHH:mm)");
         }
 
         /// <summary>

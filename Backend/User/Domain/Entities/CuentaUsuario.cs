@@ -11,7 +11,7 @@ namespace PhAppUser.Domain.Entities
     {
         #region Atributos básicos para un usuario
         [Key]
-        public int Id { get; internal set; }
+        public Guid Id { get; internal set; }
         public string NombresCompletos { get; internal set; } = string.Empty;
         public string ApellidosCompletos { get; internal set; } = string.Empty;
         public TipoId TipoId { get; internal set; }
@@ -34,6 +34,7 @@ namespace PhAppUser.Domain.Entities
         #region Atributos de identificación de login
         public string NombreUsuario { get; internal set; } = string.Empty;
         public string Password { get; internal set; } = string.Empty;
+        public DateTime? FechaUltimoLogin { get; internal set; }
         #endregion
 
         #region Atributos para determinar el tipo de usuario
@@ -69,7 +70,7 @@ namespace PhAppUser.Domain.Entities
 
             #region Métodos concatenados para los atributos básicos para un usuario
 
-            public Builder ConId(int id)
+            public Builder ConId(Guid id)
             {
                 _usuario.Id = id;
                 return this;

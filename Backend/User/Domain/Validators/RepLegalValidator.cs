@@ -19,11 +19,13 @@ namespace PhAppUser.Domain.Validators
 
             RuleFor(r => r.FechaInicio)
                 .NotEmpty().WithMessage("La fecha de inicio de la representación legal es requerida")
-                .Must(BeAValidISO8601Date).WithMessage("La fecha de inicio de la representación legal debe estar en formato ISO 8601 (yyyy-MM-dd, yyyy-MM-ddTHH:mm, yyyy-MM-ddTHH:mm:ss)");
+                .Must(BeAValidISO8601Date).WithMessage("La fecha de inicio de la representación legal debe estar en formato ISO 8601 (yyyy-MM-dd, yyyy-MM-ddTHH:mm, yyyy-MM-ddTHH:mm:ss")
+                .LessThanOrEqualTo(DateTime.Now).WithMessage("La fecha de inicio no puede estar en el futuro");
 
             RuleFor(r => r.FechaFinal)
                 .NotEmpty().WithMessage("La fecha de vencimiento de la representación legal es requerida")
-                .Must(BeAValidISO8601Date).WithMessage("La fecha final de la representación legal debe estar en formato ISO 8601 (yyyy-MM-dd, yyyy-MM-ddTHH:mm)");
+                .Must(BeAValidISO8601Date).WithMessage("La fecha final de la representación legal debe estar en formato ISO 8601 (yyyy-MM-dd, yyyy-MM-ddTHH:mm)")
+                .GreaterThan(r => r.FechaInicio).WithMessage("La fecha final debe ser posterior a la fecha de inicio"); 
         }
 
         /// <summary>

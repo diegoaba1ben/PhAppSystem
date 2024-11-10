@@ -18,7 +18,7 @@ namespace PhAppUser.Domain.Builders
 
         public CuentaUsuarioBuilder ConId(int id)
         {
-            _cuentaUsuario.Id = id;
+            _cuentaUsuario.Id = Guid.NewGuid();
             return this;
         }
 

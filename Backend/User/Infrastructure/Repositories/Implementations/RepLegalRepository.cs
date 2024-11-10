@@ -10,12 +10,9 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class RepLegalRepository : GenericRepository<RepLegal>, IRepLegalRepository
     {
-        private readonly DbContext _context;
+       
 
-        public RepLegalRepository(DbContext context) : base(context)
-        {
-            _context = context;
-        }
+        public RepLegalRepository(DbContext context) : base(context) {}
 
         public async Task<bool> ExisteCertLegalAsync(string certLegal)
         {

@@ -2,11 +2,13 @@ using System.Threading.Tasks;
 using PhAppUser.Domain.Entities;
 
 namespace PhAppUser.Infrastructure.Repositories.Interfaces
-
 {
+    /// <summary>
+    /// Interfaz para manejar operaciones específicas de Salud.
+    /// </summary>
     public interface ISaludRepository : IGenericRepository<Salud>
     {
-        // Métodos específicos de Salud
-        Task<Salud?> GetByGuidAsync(Guid SaludId);
+        // Verifica si ya existe un registro con el mismo número de afiliación
+        Task<bool> ExisteNumeroAsync(string numero);
     }
 }

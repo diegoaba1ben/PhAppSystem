@@ -4,15 +4,29 @@ using FluentValidation;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
 using PhAppUser.Infrastructure.Repositories.Implementations;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//Configuración de Kestrl para escuchar en puertos HTTP y HTTPS
+// Cargar las variables de entorno usando DotNetEnv
+DotNetEnv.Env.Load();
+
+// Configuración de cadena de conexión (temporal para design-time)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                     ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+
+builder.Services.AddDbContext<PhAppUserDbContext>(options =>
+    options.UseMySql(
+        connectionString,
+        new MySqlServerVersion(new Version(8, 0, 4))
+    ));
+
+// Configuración de Kestrel para escuchar en puertos HTTP y HTTPS
 builder.WebHost.ConfigureKestrel(options => 
-   {
-    options.ListenLocalhost(5246); //Puerto HTTP
-    options.ListenLocalhost(7010, ListenOptions => ListenOptions.UseHttps()); // Puerto HTTPS
-   });
+{
+    options.ListenLocalhost(5246); // Puerto HTTP
+    options.ListenLocalhost(7010, listenOptions => listenOptions.UseHttps()); // Puerto HTTPS
+});
 
 // Configuración de servicios
 builder.Services.AddControllers();
@@ -24,16 +38,9 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddFile("Logs/app.log");
 
-// Configurar el contexto de la base de datos con MySQL y Pomelo
-builder.Services.AddDbContext<PhAppUserDbContext>(options =>
-    options.UseMySql(
-        builder.Configuration.GetConnectionString("DefaultConnection"), 
-        new MySqlServerVersion(new Version(8, 0, 23)) 
-    ));
 // Registrar repositorios genéricos y específicos
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<ICuentaUsuarioRepository , CuentaUsuarioRepository>();
-
 
 // Configuración de CORS
 builder.Services.AddCors(options =>
@@ -62,6 +69,7 @@ app.UseCors("AllowAllOrigins");
 app.MapControllers();
 
 app.Run();
+
 
 
 

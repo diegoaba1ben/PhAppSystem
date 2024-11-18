@@ -13,7 +13,7 @@ namespace PhAppUser.Domain.Entities
         public string Numero { get; set; } = string.Empty;
 
         // Nombre de la entidad prestadora de pensiones
-        public new string RazonSocial { get; set; } = string.Empty;
+        public string RazonSocialPension { get; set; } = string.Empty;
         #endregion
 
         // Constructor privado para forzar el uso del Builder
@@ -37,9 +37,9 @@ namespace PhAppUser.Domain.Entities
             return this;
         }
 
-        public PensionBuilder ConRazonSocial(string razonSocial)
+        public PensionBuilder ConRazonSocialPension(string razonSocialPension)
         {
-            _pension.RazonSocial = razonSocial;
+            _pension.RazonSocial = razonSocialPension;
             return this;
         }
 

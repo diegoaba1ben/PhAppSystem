@@ -5,6 +5,9 @@ using PhAppUser.Infrastructure.Repositories.Interfaces;
 using PhAppUser.Infrastructure.Repositories.Implementations;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using DotNetEnv;
+using AutoMapper;
+using PhAppUser.Application.Mappers;
+using PhAppUser.Application.DTOs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,13 +23,12 @@ builder.Services.AddDbContext<PhAppUserDbContext>(options =>
         connectionString,
         new MySqlServerVersion(new Version(8, 0, 4))
     ));
-
-// Configuración de Kestrel para escuchar en puertos HTTP y HTTPS
-builder.WebHost.ConfigureKestrel(options => 
+// configuración de Kestrel para puertos HTTP y HTTPS
+builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenLocalhost(5246); // Puerto HTTP
-    options.ListenLocalhost(7010, listenOptions => listenOptions.UseHttps()); // Puerto HTTPS
-});
+    options.ListenLocalhost(5600);
+    //options.ListenLocalhost(7010, listenOptions => listenOptions.UseHttps());
+});    
 
 // Configuración de servicios
 builder.Services.AddControllers();
@@ -41,6 +43,18 @@ builder.Logging.AddFile("Logs/app.log");
 // Registrar repositorios genéricos y específicos
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<ICuentaUsuarioRepository , CuentaUsuarioRepository>();
+
+// Registro de AutoMapper
+builder.Services.AddAutoMapper(config => 
+{
+    config.AddProfile<CuentaUsuarioMappingProfile>();
+    config.AddProfile<RepLegalMappingProfile>();
+    config.AddProfile<SaludMappingProfile>();
+    config.AddProfile<PensionMappinProfile>();
+    config.AddProfile<PermisoMappingProfile>();
+    config.AddProfile<RolMappingProfile>();
+    config.AddProfile<AreaMappingProfile>();
+});
 
 // Configuración de CORS
 builder.Services.AddCors(options =>
@@ -63,7 +77,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseHttpsRedirection(); 
 app.UseAuthorization();
 app.UseCors("AllowAllOrigins");
 app.MapControllers();

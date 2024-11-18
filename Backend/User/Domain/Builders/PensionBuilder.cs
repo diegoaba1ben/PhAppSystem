@@ -20,9 +20,9 @@ namespace PhAppUser.Domain.Builders
             _pension.Numero = numero;
             return this;
         }
-        public PensionBuilder ConRazonSocial(string razonSocial)
+        public PensionBuilder ConRazonSocialPension(string razonSocialPension)
         {
-            _pension.RazonSocial = razonSocial;
+            _pension.RazonSocial = razonSocialPension;
             return this;
         }
 

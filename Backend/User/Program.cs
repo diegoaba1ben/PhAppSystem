@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using DotNetEnv;
 using AutoMapper;
 using PhAppUser.Application.Mappers;
+using PhAppUser.Application.Queries;
 using PhAppUser.Application.DTOs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,21 +15,27 @@ var builder = WebApplication.CreateBuilder(args);
 // Cargar las variables de entorno usando DotNetEnv
 DotNetEnv.Env.Load();
 
-// Configuración de cadena de conexión (temporal para design-time)
+// Configuración de cadena de conexión
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                      ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("La cadena de conexión no está configurada correctamente.");
+}
 
 builder.Services.AddDbContext<PhAppUserDbContext>(options =>
     options.UseMySql(
         connectionString,
         new MySqlServerVersion(new Version(8, 0, 4))
     ));
-// configuración de Kestrel para puertos HTTP y HTTPS
+
+// Configuración de Kestrel para puertos HTTP y HTTPS
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ListenLocalhost(5600);
-    //options.ListenLocalhost(7010, listenOptions => listenOptions.UseHttps());
-});    
+    // options.ListenLocalhost(7010, listenOptions => listenOptions.UseHttps());
+});
 
 // Configuración de servicios
 builder.Services.AddControllers();
@@ -42,10 +49,10 @@ builder.Logging.AddFile("Logs/app.log");
 
 // Registrar repositorios genéricos y específicos
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-builder.Services.AddScoped<ICuentaUsuarioRepository , CuentaUsuarioRepository>();
+builder.Services.AddScoped<ICuentaUsuarioRepository, CuentaUsuarioRepository>();
 
 // Registro de AutoMapper
-builder.Services.AddAutoMapper(config => 
+builder.Services.AddAutoMapper(config =>
 {
     config.AddProfile<CuentaUsuarioMappingProfile>();
     config.AddProfile<RepLegalMappingProfile>();
@@ -55,6 +62,9 @@ builder.Services.AddAutoMapper(config =>
     config.AddProfile<RolMappingProfile>();
     config.AddProfile<AreaMappingProfile>();
 });
+
+// Registro de Queries (ajustado el error de sintaxis y nombre)
+builder.Services.AddScoped<CuentaUsuarioQueries>();
 
 // Configuración de CORS
 builder.Services.AddCors(options =>
@@ -77,13 +87,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection(); 
+app.UseHttpsRedirection();
 app.UseAuthorization();
 app.UseCors("AllowAllOrigins");
 app.MapControllers();
 
 app.Run();
-
-
-
-

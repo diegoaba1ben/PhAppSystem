@@ -30,5 +30,7 @@ namespace PhAppUser.Application.DTOs
         public Afiliacion Afiliacion{ get; set; }
         public int? DiasPendientes { get; set; }
         public DateTime FechaCreacion { get; set; }
+        // Propiedad para perfiles asociados
+        public List<PerfilDto> Perfiles { get; set; } = new List<PerfilDto> ();
     }
 }

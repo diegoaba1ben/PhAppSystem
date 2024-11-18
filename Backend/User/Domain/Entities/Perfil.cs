@@ -10,27 +10,38 @@ namespace PhAppUser.Domain.Entities
 
         // Navegación a CuentaUsuarios (relación muchos a muchos)
         public ICollection<CuentaUsuario> CuentaUsuarios { get; set; } = new List<CuentaUsuario>();
-        
+
         // Navegación a roles (relación muchos a muchos)
         public ICollection<Rol> Roles { get; set; } = new List<Rol>();
 
         // Relación uno a muchos con Area
         public Guid AreaId { get; set; }
-        public Area? Area { get; set; }
-        
+        public Area Area { get; set; }
+
         // Constructor con parámetros para el Builder
         public Perfil(Guid usuarioId, Area area, ICollection<Rol> roles)
         {
+            if (area == null)
+            {
+                throw new ArgumentNullException(nameof(area), "El área no puede ser nula.");
+            }
+
+            if (roles == null || roles.Count == 0)
+            {
+                throw new ArgumentException("El perfil debe tener al menos un rol asignado.", nameof(roles));
+            }
+
             Id = Guid.NewGuid();
             Area = area;
             AreaId = area.Id;
-            Roles = new List<Rol>();
+            Roles = roles;
         }
 
         // Constructor privado para forzar el uso del builder
         internal Perfil()
         {
             Id = Guid.NewGuid();
+            Area = Area.Crear().Build();
         }
 
         // Método estático para iniciar el Builder

@@ -8,14 +8,14 @@ namespace PhAppUser.Infrastructure.Context
         public PhAppUserDbContext(DbContextOptions<PhAppUserDbContext> options) : base(options) { }
 
         // Definición de DbSets
-        public DbSet<CuentaUsuario> CuentasUsuarios { get; set; }
-        public DbSet<Salud> Saluds { get; set; }
-        public DbSet<Pension> Pensiones { get; set; }
-        public DbSet<RepLegal> RepLegals{ get; set; }
-        public DbSet<Permiso> Permisos { get; set; }
-        public DbSet<Rol> Roles { get; set; }
-        public DbSet<Area> Areas{ get; set; }
-        public DbSet<Perfil> Perfiles { get; set; }
+        public required DbSet<CuentaUsuario> CuentasUsuarios { get; set; }
+        public required DbSet<Salud> Saluds { get; set; }
+        public required DbSet<Pension> Pensiones { get; set; }
+        public required DbSet<RepLegal> RepLegals{ get; set; }
+        public required DbSet<Permiso> Permisos { get; set; }
+        public required DbSet<Rol> Roles { get; set; }
+        public required DbSet<Area> Areas{ get; set; }
+        public required DbSet<Perfil> Perfiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -67,7 +67,8 @@ namespace PhAppUser.Infrastructure.Context
             modelBuilder.Entity<Perfil>()
                 .HasOne(p => p.Area)
                 .WithMany()
-                .HasForeignKey(p => p.AreaId);
+                .HasForeignKey(p => p.AreaId)
+                .IsRequired();
         }        // Métodos adicionales (si es necesario)
     }
 }

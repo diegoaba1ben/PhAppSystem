@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PhAppUser.Infrastructure.Context;
 
@@ -11,9 +12,11 @@ using PhAppUser.Infrastructure.Context;
 namespace User.Migrations
 {
     [DbContext(typeof(PhAppUserDbContext))]
-    partial class PhAppUserDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241118215435_ActualizacionPerfil")]
+    partial class ActualizacionPerfil
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

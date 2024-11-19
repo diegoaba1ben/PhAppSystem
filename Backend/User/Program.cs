@@ -61,10 +61,12 @@ builder.Services.AddAutoMapper(config =>
     config.AddProfile<PermisoMappingProfile>();
     config.AddProfile<RolMappingProfile>();
     config.AddProfile<AreaMappingProfile>();
+    config.AddProfile<AdvancedUserMappingProfile>();
 });
 
 // Registro de Queries (ajustado el error de sintaxis y nombre)
 builder.Services.AddScoped<CuentaUsuarioQueries>();
+builder.Services.AddScoped<AdvancedQuery>();
 
 // Configuración de CORS
 builder.Services.AddCors(options =>

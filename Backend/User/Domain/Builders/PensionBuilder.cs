@@ -29,6 +29,14 @@ namespace PhAppUser.Domain.Builders
         // Constructor de la clase
         public Pension Build()
         {
+            if(string.IsNullOrEmpty(_pension.Numero))
+            {
+                throw new InvalidOperationException("El número de afiliación a pensión es obligatorio.");
+            }
+            if(string.IsNullOrEmpty(_pension.RazonSocialPension))
+            {
+                throw new InvalidOperationException("La razón social de la entidad de Pensión es obligatoria.");
+            }
             return _pension;
         }
     }

@@ -29,6 +29,14 @@ namespace PhAppUser.Domain.Builders
         // Constructor de la clase
         public Salud Build()
         {
+            if(string.IsNullOrEmpty(_salud.Numero))
+            {
+                throw new InvalidOperationException("El número de afiliación es obligatorio.");
+            }
+            if(string.IsNullOrEmpty(_salud.RazonSocialSalud))
+            {
+                throw new InvalidOperationException("La razón social del prestador en salud es obligatorio");
+            }
             return _salud;
         }
     }

@@ -31,6 +31,14 @@ namespace PhAppUser.Infrastructure.Context
             modelBuilder.Entity<Area>().ToTable("Area");
             modelBuilder.Entity<Perfil>().ToTable("Perfil");
 
+            // Configuración de atributos personalizados para CuentaUsuario
+            modelBuilder.Entity<CuentaUsuario>(entity =>
+            {
+                entity.Property(e => e.Intento)
+                    .HasDefaultValue(0)
+                    .IsRequired();
+            });
+
             // Configuraciones de relaciones personalizadas
             ConfigureRelationships(modelBuilder);
         }

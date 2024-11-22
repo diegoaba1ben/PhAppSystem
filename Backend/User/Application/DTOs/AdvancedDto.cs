@@ -1,9 +1,8 @@
-using System;
-using PhAppUser.Application.DTOs;
+using PhAppUser.Domain.Enums;
 
 namespace PhAppUser.Application.DTOs
 {
-    public class AdvancedDto 
+    public class AdvancedDto
     {
         /// <summary>
         /// DTO para representar los resultados de búsquedas avanzadas de usuarios.
@@ -23,6 +22,12 @@ namespace PhAppUser.Application.DTOs
             public string NombreUsuario { get; set; } = string.Empty;
             public DateTime? FechaUltimoLogin { get; set; }
             public List<PerfilDto> Perfiles { get; set; } = new List<PerfilDto>();
+
+            // Nuevos atributos relacionados con la afiliación y auditoría
+            public Afiliacion Afiliacion { get; set; }
+            public int? DiasPendientes { get; set; }
+            public int Intento { get; set; }
+            public bool Bloqueado { get; set; }
         }
     }
 }

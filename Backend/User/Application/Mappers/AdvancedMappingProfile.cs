@@ -24,7 +24,11 @@ namespace PhAppUser.Application.Mappers
                 .ForMember(dest => dest.FechaRegistro, opt => opt.MapFrom(src => src.FechaRegistro))
                 .ForMember(dest => dest.NombreUsuario, opt => opt.MapFrom(src => src.NombreUsuario))
                 .ForMember(dest => dest.FechaUltimoLogin, opt => opt.MapFrom(src => src.FechaUltimoLogin))
-                .ForMember(dest => dest.Perfiles, opt => opt.MapFrom(src => src.Perfiles)); // Relación con perfiles
+                .ForMember(dest => dest.Perfiles, opt => opt.MapFrom(src => src.Perfiles)) // Relación con perfiles
+                .ForMember(dest => dest.Afiliacion, opt => opt.MapFrom(src => src.Afiliacion)) // Relación con afiliación
+                .ForMember(dest => dest.DiasPendientes, opt => opt.MapFrom(src => src.DiasPendientes)) // Relación con dias pendientes
+                .ForMember(dest => dest.Intento, opt => opt.MapFrom(src => src.Intento))
+                .ForMember(dest => dest.Bloqueado, opt => opt.MapFrom(src =>src.Bloqueado));
 
             // Mapeo de Perfil a PerfilDto
             CreateMap<Perfil, PerfilDto>()

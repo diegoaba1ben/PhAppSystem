@@ -46,6 +46,14 @@ namespace PhAppUser.Domain.Entities
         // Método para construir la instancia final
         public Pension Build()
         {
+            if(string.IsNullOrEmpty(_pension.Numero))
+            {
+                throw new InvalidOperationException("El número de pensión es obligatorio.");
+            }
+            if(string.IsNullOrEmpty(_pension.RazonSocialPension))
+            {
+                throw new InvalidOperationException("El nombre de la entidad de Pensión es obligatorio.");
+            }
             return _pension;
         }
     }

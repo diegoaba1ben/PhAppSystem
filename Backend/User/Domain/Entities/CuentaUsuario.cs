@@ -53,12 +53,14 @@ namespace PhAppUser.Domain.Entities
         public Afiliacion Afiliacion { get; internal set; }
         public int? DiasPendientes { get; internal set; }
         public DateTime FechaCreacion { get; internal set; } = DateTime.Now;
+
+        // Atributos de auditoría para Afiliación
+        public int Intento { get; internal set; } = 0; //Maneja el número de aplazamientos.
+        public bool Bloqueado { get; internal set; } = false; //Maneja el bloqueo de la afiliación.
         #endregion
 
         // Navegación inversa a Perfiles (uno a muchos)
-        public ICollection<Perfil> Perfiles { get; internal set; } = new List<Perfil>();
-
-        
+        public ICollection<Perfil> Perfiles { get; internal set; } = new List<Perfil>();       
 
         // Constructor privado para forzar el uso del builder
         internal CuentaUsuario() { }
@@ -70,9 +72,9 @@ namespace PhAppUser.Domain.Entities
 
             #region Métodos concatenados para los atributos básicos para un usuario
 
-            public Builder ConId(Guid id)
+            public Builder GenerarNuevoId()
             {
-                _usuario.Id = id;
+                _usuario.Id = Guid.NewGuid();
                 return this;
             }
             public Builder ConNombresCompletos(string nombres)
@@ -140,6 +142,7 @@ namespace PhAppUser.Domain.Entities
                 _usuario.FechaInactivacion = fechaInactivacion; 
                 return this;
             }
+
             #endregion
 
             #region Métodos concatenados para la identificación de loggin
@@ -215,15 +218,37 @@ namespace PhAppUser.Domain.Entities
                 _usuario.FechaCreacion = fechaCreacion;
                 return this;
             }
+            // Métodos para auditoría de Afiliación
+            public Builder ConIntento(int intentos)
+            {
+                _usuario.Intento = intentos;
+                return this;
+            }
+            public Builder ConBloqueado (bool bloqueado)
+            {
+                _usuario.Bloqueado = bloqueado;
+                return this;
+            }
             #endregion
             // Constructor final para construir la instancia
             public CuentaUsuario Build()
             {
                 
+                if (_usuario.TipoContrato == TipoContrato.Empleado && _usuario.SujetoRetencion == null)
+                {
+                    throw new InvalidOperationException("El campo Sujeto Retencion debe definirse para empleados.");
+                }
+                if(_usuario.TipoContrato == TipoContrato.PrestadorDeServicios &&
+                    (string.IsNullOrEmpty(_usuario.RazonSocial) || !_usuario.TipoIdTrib.HasValue))
+                    {
+                        throw new InvalidOperationException("Los prestadores de servicios deben incluir Razón Social y Tipo de identificacion Tirbutaria");
+                    } 
+                if(_usuario.Bloqueado && _usuario.EsActivo)
+                {
+                    throw new InvalidOperationException("Un usuario bloqueado no puede estar activo.");
+                }
                 return _usuario;
-            }
-           
-            
+            }            
         }
     }
 }

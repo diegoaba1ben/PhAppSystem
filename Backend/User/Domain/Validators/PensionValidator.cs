@@ -13,7 +13,7 @@ namespace PhAppUser.Domain.Validators
         {
             RuleFor(p => p.Numero)
                 .NotEmpty().WithMessage("El campo número es requerido.")
-                .Length(5,25).WithMessage("El campo debe tener entre 5 y 25 caracteres.")
+                .Length(5,50).WithMessage("El campo debe tener entre 5 y 50 caracteres.")
                 .Matches(@"^\d+$").WithMessage("El campo solo debe contener números.");
             RuleFor(p => p.RazonSocialPension)
                 .NotEmpty().WithMessage("El campo Razón Social es requerido")

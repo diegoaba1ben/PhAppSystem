@@ -16,7 +16,7 @@ namespace PhAppUser.Domain.Builders
             _cuentaUsuario = new CuentaUsuario();
         }
 
-        public CuentaUsuarioBuilder ConId(int id)
+        public CuentaUsuarioBuilder GenerarNuevoId()
         {
             _cuentaUsuario.Id = Guid.NewGuid();
             return this;
@@ -153,9 +153,37 @@ namespace PhAppUser.Domain.Builders
             _cuentaUsuario.FechaCreacion = fechaCreacion;
             return this;
         }
+        // Métodos de auditoría a Afiliación.
+        public CuentaUsuarioBuilder ConIntento(int intentos)
+        {
+            if(intentos < 0)
+            {
+                throw new ArgumentException("El aplazamiento no puede ser negativo");
+            }   
+            _cuentaUsuario.Intento = intentos; 
+            return this;
+        }
+        public CuentaUsuarioBuilder ConBloqueado(bool bloqueado)
+        {
+            _cuentaUsuario.Bloqueado = bloqueado;
+            return this;
+        }
 
         public CuentaUsuario Build()
         {
+            if(_cuentaUsuario.TipoContrato == TipoContrato.Empleado && _cuentaUsuario.SujetoRetencion == null)
+            {
+              throw new InvalidOperationException("El campo sujeto de retención debe definirse para empleados.");  
+            }
+            if(_cuentaUsuario.TipoContrato == TipoContrato.PrestadorDeServicios &&
+                (string.IsNullOrEmpty(_cuentaUsuario.RazonSocial) || !_cuentaUsuario.TipoIdTrib.HasValue))
+                {
+                    throw new InvalidOperationException("Los prestadores de servicios debe incluir Razón social y Tipo de Identificación Tributaria.");
+                }
+            if(_cuentaUsuario.Bloqueado && _cuentaUsuario.EsActivo)
+            {
+                throw new InvalidOperationException("Un usuario bloqueado no puede estar activo.");
+            }
             return _cuentaUsuario;
         }
     }

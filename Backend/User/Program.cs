@@ -9,10 +9,11 @@ using AutoMapper;
 using PhAppUser.Application.Mappers;
 using PhAppUser.Application.Queries;
 using PhAppUser.Application.DTOs;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Cargar las variables de entorno usando DotNetEnv
+// Cargar las variables de entorno
 DotNetEnv.Env.Load();
 
 // Configuración de cadena de conexión
@@ -21,16 +22,17 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 if (string.IsNullOrEmpty(connectionString))
 {
-    throw new InvalidOperationException("La cadena de conexión no está configurada correctamente.");
+    throw new InvalidOperationException("La cadena de conexión no está configurada. Verifique el archivo de configuración o las variables de entorno.");
 }
 
 builder.Services.AddDbContext<PhAppUserDbContext>(options =>
     options.UseMySql(
         connectionString,
-        new MySqlServerVersion(new Version(8, 0, 4))
+        new MySqlServerVersion(new Version(8, 0, 4)),
+        mysqlOptions => mysqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null)
     ));
 
-// Configuración de Kestrel para puertos HTTP y HTTPS
+// Configuración de Kestrel
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ListenLocalhost(5600);
@@ -42,29 +44,24 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configuración de Logger
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.AddFile("Logs/app.log");
+// Configuración de Serilog como logger principal
+builder.Host.UseSerilog((context, config) =>
+{
+    config
+        .WriteTo.Console() // Logs en consola
+        .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day) // Logs diarios
+        .Enrich.FromLogContext() // Agrega contexto adicional
+        .MinimumLevel.Debug(); // Nivel de log mínimo
+});
 
-// Registrar repositorios genéricos y específicos
+// Registrar repositorios
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<ICuentaUsuarioRepository, CuentaUsuarioRepository>();
 
-// Registro de AutoMapper
-builder.Services.AddAutoMapper(config =>
-{
-    config.AddProfile<CuentaUsuarioMappingProfile>();
-    config.AddProfile<RepLegalMappingProfile>();
-    config.AddProfile<SaludMappingProfile>();
-    config.AddProfile<PensionMappinProfile>();
-    config.AddProfile<PermisoMappingProfile>();
-    config.AddProfile<RolMappingProfile>();
-    config.AddProfile<AreaMappingProfile>();
-    config.AddProfile<AdvancedUserMappingProfile>();
-});
+// Configuración de AutoMapper
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-// Registro de Queries (ajustado el error de sintaxis y nombre)
+// Registro de Queries
 builder.Services.AddScoped<CuentaUsuarioQueries>();
 builder.Services.AddScoped<AdvancedQuery>();
 
@@ -82,7 +79,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 var app = builder.Build();
 
-// Configuración de Swagger en desarrollo
+// Configuración de Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

@@ -57,7 +57,9 @@ namespace PhAppUser.Domain.Validators
 
             RuleFor(cu => cu.FechaInactivacion)
                 .Must(date => date == null || date >= DateTime.UtcNow)
-                .WithMessage("La fecha de inactivación no puede ser menor a la fecha actual.");
+                .WithMessage("La fecha de inactivación no puede ser hoy o una fecha futura.")
+                .NotNull().When(cu =>cu.Bloqueado)
+                .WithMessage("La fecha de inactivación es requerida si el usuairo no está activo.") ;
             #endregion
 
             #region Validaciones para los atributos de loggin
@@ -68,7 +70,7 @@ namespace PhAppUser.Domain.Validators
                 .NotEmpty().WithMessage("El campo Password es requerido.")
                 .Length(8, 20).WithMessage("La contraseña debe contener entre 8 y 20 caracteres")
                 .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$")
-                .WithMessage("La contraseña debe al menos una letra minúscula, una mayúscula, un número y un carácter especial.");
+                .WithMessage("La contraseña debe contener al menos una letra minúscula, una mayúscula, un número y un carácter especial. Ejemplo: Passw0rd@.");;
             #endregion
 
             #region Validaciones para determinar el tipo de usuario
@@ -100,7 +102,21 @@ namespace PhAppUser.Domain.Validators
 
             #region Validaciones para los atributos relacionados con la seguridad social
             RuleFor(cu => cu.Afiliacion)
-                .NotNull().WithMessage("El tipo de afiliación es requerido");
+                .IsInEnum().WithMessage("El tipo de afiliación no es válido.");
+            RuleFor(cu => cu.DiasPendientes)
+                .GreaterThanOrEqualTo(0).When(cu => cu.Afiliacion == Enums.Afiliacion.Parcial)
+                .WithMessage("Los días pendientes deben ser mayores o iguales a 0 si la afiliación es parcial")
+                .Null().When(cu => cu.Bloqueado)
+                .WithMessage("Un usuario Bloqueado no puede tener días pendientes de afiliación");
+            // Validación de los intentos de aplazamiento
+            RuleFor(cu => cu.Intento)
+                .InclusiveBetween(0,2). WithMessage("El número de intentos de aplazamiento no debe ser mayor a 2.")
+                .LessThanOrEqualTo(2).When(cu => !cu.Bloqueado)
+                .WithMessage("El número de intentos no debe superar los 2 intentos si el usuario no está bloqueado");       
+            // Validar Bloqueado
+            RuleFor(cu => cu.Bloqueado)
+                .Must((cu, bloqueado) => !bloqueado || (cu.Intento >= 2 && !cu.EsActivo))
+                .WithMessage("El usuario solo puede ser bloqueado si ha superado los intentos permitidos y está inactivo.");                
             #endregion
         }
     }

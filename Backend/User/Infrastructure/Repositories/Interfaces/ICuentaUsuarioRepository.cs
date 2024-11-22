@@ -10,7 +10,7 @@ namespace PhAppUser.Infrastructure.Repositories.Interfaces
     /// </summary>
     public interface ICuentaUsuarioRepository : IGenericRepository<CuentaUsuario>
     {     
-       //  Método de búsqueda avanzada para CuentaUsuario.
+       // Método de búsqueda avanzada para CuentaUsuario.
        Task<IEnumerable<CuentaUsuario>> SearchUsuarioAsync(string searchTerm);
        Task<IEnumerable<CuentaUsuario>> GetUsuariosActivosAsync();
        Task<IEnumerable<CuentaUsuario>> GetUsuarioByPerfilAsync(Guid perfilId);
@@ -19,6 +19,8 @@ namespace PhAppUser.Infrastructure.Repositories.Interfaces
        Task<bool> ExisteNombreUsuarioAsync(string NombreUsuario);
        Task<IEnumerable<CuentaUsuario>> GetUsuariosByUltimoLoginAsync(DateTime date);
        Task<IEnumerable<CuentaUsuario>> GetUsuariosAfiliacionPendienteAsync();
-       
+
+       // Método para inactivar un usuario
+       Task InactivarUsuarioAsync(Guid CuentaUsuarioId, DateTime fechaInactivacion);
     }
 }

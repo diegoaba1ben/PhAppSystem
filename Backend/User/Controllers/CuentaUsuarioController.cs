@@ -82,5 +82,22 @@ namespace PhAppUser.Controllers
             var usuarios = await _cuentaUsuarioRepository.GetUsuariosAfiliacionPendienteAsync();
             return Ok(usuarios);
         }
+        [HttpPut("{id}/inactivar")]
+        public async Task<IActionResult> InactivarUsuario(Guid id, [FromBody] DateTime fechaInactivacion)
+        {
+            try
+            {
+                await _cuentaUsuarioRepository.InactivarUsuarioAsync(id, fechaInactivacion);
+                return NoContent(); // Código 204
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { mensaje = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
+            }
+        }
     }
 }

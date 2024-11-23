@@ -5,6 +5,10 @@ using PhAppUser.Infrastructure.Repositories.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PhAppUser.Infrastructure.Repositories.Implementations;
+using System.ComponentModel.DataAnnotations;
+using PhAppUser.Application.DTOs;
+
 
 namespace PhAppUser.Controllers
 {
@@ -13,10 +17,21 @@ namespace PhAppUser.Controllers
     public class CuentaUsuarioController : ControllerBase
     {
         private readonly ICuentaUsuarioRepository _cuentaUsuarioRepository;
+        private readonly ISaludRepository _saludRepository = null!;
+        private readonly IPensionRepository _pensionRepository = null!;
+        private readonly IPerfilRepository _perfilRepository = null!;
 
-        public CuentaUsuarioController(ICuentaUsuarioRepository cuentaUsuarioRepository)
+        public CuentaUsuarioController(
+            ICuentaUsuarioRepository cuentaUsuarioRepository,
+            ISaludRepository _saludRepository,
+            IPensionRepository _pensionRepository,
+            PerfilRepository _perfilRepository)
         {
-            _cuentaUsuarioRepository = cuentaUsuarioRepository;
+            _cuentaUsuarioRepository = cuentaUsuarioRepository ?? throw new ArgumentNullException(nameof(cuentaUsuarioRepository));
+            _saludRepository = _saludRepository ?? throw new ArgumentNullException(nameof(_saludRepository));
+            _pensionRepository = _pensionRepository ?? throw new ArgumentNullException(nameof(_pensionRepository));
+            _perfilRepository = _perfilRepository ?? throw new ArgumentNullException(nameof(_perfilRepository));
+
         }
 
         // Método de búsqueda avanzada
@@ -99,5 +114,132 @@ namespace PhAppUser.Controllers
                 return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
             }
         }
+        [HttpPut("{id}/inactivar-relaciones")]
+        public async Task<IActionResult> InactivarUsuarioConRelaciones(Guid id, [FromBody] DateTime fechaInactivacion)
+        {
+            try
+            {
+                // Obtener usuario
+                var usuario = await _cuentaUsuarioRepository.GetByIdAsync(id);
+                if (usuario == null)
+                {
+                    return NotFound(new { mensaje = $"Usuario con ID {id} no encontrado." });
+                }
+
+                // Validar intentos y afiliación
+                if (usuario.Afiliacion == Afiliacion.Parcial && usuario.Intento >= 2)
+                {
+                    // Obtener afiliaciones relacionadas
+                    var afiliacionSalud = await _saludRepository.GetByIdAsync(id);
+                    var afiliacionPension = await _pensionRepository.GetByIdAsync(id);
+
+                    // Verificar ausencia de números de afiliación
+                    bool saludIncompleta = afiliacionSalud == null || string.IsNullOrEmpty(afiliacionSalud.Numero);
+                    bool pensionIncompleta = afiliacionPension == null || string.IsNullOrEmpty(afiliacionPension.Numero);
+
+                    if (saludIncompleta || pensionIncompleta)
+                    {
+                        // Proceder con la inactivación del usuario
+                        usuario.EsActivo = false;
+                        usuario.FechaInactivacion = fechaInactivacion;
+                        await _cuentaUsuarioRepository.UpdateAsync(usuario);
+
+                        // Inactivar Salud
+                        if (afiliacionSalud != null)
+                        {
+                            afiliacionSalud.EsActivo = false;
+                            afiliacionSalud.FechaInactivacion = fechaInactivacion;
+                            await _saludRepository.UpdateAsync(afiliacionSalud);
+                        }
+
+                        // Inactivar Pensión
+                        if (afiliacionPension != null)
+                        {
+                            afiliacionPension.EsActivo = false;
+                            afiliacionPension.FechaInactivacion = fechaInactivacion;
+                            await _pensionRepository.UpdateAsync(afiliacionPension);
+                        }
+
+                        // Desvincular perfiles asociados
+                        var perfilesRelacionados = await _perfilRepository.ObtenerPerfilesConUsuariosAsync();
+                        foreach (var perfil in perfilesRelacionados.Where(p => p.CuentaUsuarios.Any(cu => cu.Id == id)))
+                        {
+                            perfil.CuentaUsuarios = perfil.CuentaUsuarios.Where(cu => cu.Id != id).ToList();
+                            await _perfilRepository.UpdateAsync(perfil);
+                        }
+
+                        return Ok(new { mensaje = "Usuario y sus relaciones inactivados correctamente debido a la falta de afiliación." });
+                    }
+                }
+
+                return BadRequest(new
+                {
+                    mensaje = "El usuario no cumple con las condiciones para ser inactivado en este caso."
+                });
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Error al inactivar el usuario con ID {Id} y sus relaciones", id);
+                return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
+            }
+        }
+        // Reactivación del usuario por ingresar el número de afiliación faltante.
+        [HttpPost("{id}/reactivar")]
+        public async Task<IActionResult> ReactivarUsuario(Guid id, [FromBody] ReactivacionRequest request)
+        {
+            try
+            {
+                // Obtener el usuario por ID
+                var usuario = await _cuentaUsuarioRepository.GetByIdAsync(id);
+
+                if (usuario == null)
+                {
+                    return NotFound(new { mensaje = $"Usuario con ID {id} no encontrado." });
+                }
+
+                if (!usuario.Bloqueado)
+                {
+                    return BadRequest(new { mensaje = "El usuario no está bloqueado." });
+                }
+
+                // Actualizar Salud
+                if (!string.IsNullOrEmpty(request.NumeroSalud))
+                {
+                    var afiliacionSalud = await _saludRepository.GetByIdAsync(id);
+                    if (afiliacionSalud != null)
+                    {
+                        afiliacionSalud.Numero = request.NumeroSalud;
+                        afiliacionSalud.EsActivo = true;
+                        await _saludRepository.UpdateAsync(afiliacionSalud);
+                    }
+                }
+
+                // Actualizar Pensión
+                if (!string.IsNullOrEmpty(request.NumeroPension))
+                {
+                    var afiliacionPension = await _pensionRepository.GetByIdAsync(id);
+                    if (afiliacionPension != null)
+                    {
+                        afiliacionPension.Numero = request.NumeroPension;
+                        afiliacionPension.EsActivo = true;
+                        await _pensionRepository.UpdateAsync(afiliacionPension);
+                    }
+                }
+
+                // Reactivar usuario
+                usuario.EsActivo = true;
+                usuario.Bloqueado = false;
+                usuario.Intento = 0;
+                await _cuentaUsuarioRepository.UpdateAsync(usuario);
+
+                return Ok(new { mensaje = "Usuario reactivado exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Error al intentar reactivar usuario con ID {Id}", id);
+                return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
+            }
+        }
+
     }
 }

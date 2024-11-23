@@ -18,7 +18,7 @@ namespace PhAppUser.Domain.Validators
             RuleFor(s => s.RazonSocialSalud)
                 .NotEmpty().WithMessage("El campo Razón social es requerido.")
                 .MaximumLength(25).WithMessage("El campo  debe tener como máximo 25 caracteres")
-                .Matches(@"^[a-zA-Z\s]+$").WithMessage("El camposolo debe contener letras y espacios");
+                .Matches(@"^[a-zA-Z\s'-]+$").WithMessage("El campo solo debe contener letras y espacios");
         }
     }
 }

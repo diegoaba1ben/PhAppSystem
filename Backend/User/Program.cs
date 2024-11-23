@@ -57,6 +57,14 @@ builder.Host.UseSerilog((context, config) =>
 // Registrar repositorios
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<ICuentaUsuarioRepository, CuentaUsuarioRepository>();
+builder.Services.AddScoped<ISaludRepository, SaludRepository>();
+builder.Services.AddScoped<IPensionRepository, PensionRepository>();
+builder.Services.AddScoped<IPerfilRepository, PerfilRepository>();
+builder.Services.AddScoped<IPermisoRepository, PermisoRepository>();
+builder.Services.AddScoped<IRolRepository, RolRepository>();
+builder.Services.AddScoped<IAreaRepository, AreaRepository>();
+builder.Services.AddScoped<IRepLegalRepository, RepLegalRepository>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 // Configuración de AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());

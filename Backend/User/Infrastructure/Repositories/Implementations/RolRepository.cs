@@ -2,13 +2,14 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PhAppUser.Domain.Entities;
+using PhAppUser.Infrastructure.Context;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
 
 namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class RolRepository : GenericRepository<Rol>, IRolRepository
     {
-        public RolRepository(DbContext context) : base(context) { }
+        public RolRepository(PhAppUserDbContext context) : base(context) { }
 
         public async Task<Rol?> BuscarPorNombreAsync(string nombre)
         {

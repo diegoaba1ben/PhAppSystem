@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PhAppUser.Infrastructure.Repositories.Implementations;
-using System.ComponentModel.DataAnnotations;
 using PhAppUser.Application.DTOs;
 
 
@@ -238,6 +237,33 @@ namespace PhAppUser.Controllers
             {
                 Serilog.Log.Error(ex, "Error al intentar reactivar usuario con ID {Id}", id);
                 return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
+            }
+        }
+        /// <summary>
+        /// Obtiene el reporte de usuarios inactivos.
+        /// </summary>
+        [HttpGet("usuarios-inactivos")]
+        public async Task<ActionResult<IEnumerable<UsuarioInactivoDto>>> GetUsuariosInactivosAsync()
+        {
+            try
+            {
+                var usuariosInactivos = await _cuentaUsuarioRepository.GetUsuariosInactivosAsync();
+
+                if (usuariosInactivos == null || !usuariosInactivos.Any())
+                {
+                    return NotFound(new { mensaje = "No se encontraron usuarios inactivos." });
+                }
+
+                return Ok(usuariosInactivos);
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Error al obtener el reporte de usuarios inactivos.");
+                return StatusCode(500, new
+                {
+                    mensaje = "Ocurrió un error inesperado al obtener el reporte de usuarios inactivos.",
+                    detalle = ex.Message
+                });
             }
         }
 

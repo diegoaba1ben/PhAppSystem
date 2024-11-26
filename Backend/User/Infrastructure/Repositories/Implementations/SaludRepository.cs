@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PhAppUser.Domain.Entities;
+using PhAppUser.Infrastructure.Context;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
 using Serilog;
 
@@ -8,7 +9,7 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class SaludRepository : GenericRepository<Salud>, ISaludRepository
     {
-        public SaludRepository(DbContext context) : base(context) { }
+        public SaludRepository(PhAppUserDbContext context) : base(context) { }
 
         /// <summary>
         /// Verifica si ya existe un registro con el mismo número de afiliación.

@@ -4,13 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PhAppUser.Domain.Entities;
+using PhAppUser.Infrastructure.Context;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
 
 namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class PermisoRepository : GenericRepository<Permiso>, IPermisoRepository
     {
-        public PermisoRepository(DbContext context) : base(context) { }
+        public PermisoRepository(PhAppUserDbContext context) : base(context) { }
 
         public async Task<Permiso?> BuscarPorCodigoAsync(string codigo)
         {

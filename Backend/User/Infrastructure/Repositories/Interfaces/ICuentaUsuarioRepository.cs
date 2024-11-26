@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using PhAppUser.Domain.Entities;
 using PhAppUser.Domain.Enums;
+using PhAppUser.Application.DTOs;
 
 namespace PhAppUser.Infrastructure.Repositories.Interfaces
 {
@@ -22,5 +23,7 @@ namespace PhAppUser.Infrastructure.Repositories.Interfaces
 
        // Método para inactivar un usuario
        Task InactivarUsuarioAsync(Guid CuentaUsuarioId, DateTime fechaInactivacion);
+       Task<IEnumerable<UsuarioInactivoDto>> GetUsuariosInactivosAsync();
+        Task<bool> ExisteIdentificacionAsync(string identificacion); 
     }
 }

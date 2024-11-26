@@ -4,14 +4,15 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Serilog;
+using PhAppUser.Infrastructure.Context;
 
 namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
-        protected readonly DbContext _context;
+        protected readonly PhAppUserDbContext _context;
 
-        public GenericRepository(DbContext context)
+        public GenericRepository(PhAppUserDbContext context)
         {
             _context = context;
         }

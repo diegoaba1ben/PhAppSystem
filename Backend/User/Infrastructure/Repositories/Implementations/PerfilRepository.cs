@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PhAppUser.Domain.Entities;
+using PhAppUser.Infrastructure.Context;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
 using Serilog;
 
@@ -11,7 +12,7 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class PerfilRepository : GenericRepository<Perfil>, IPerfilRepository
     {
-        public PerfilRepository(DbContext context) : base(context) { }
+        public PerfilRepository(PhAppUserDbContext context) : base(context) { }
 
         // Métodos básicos de búsqueda y validación
         public async Task<Perfil?> BuscarPorIdAsync(Guid perfilId)

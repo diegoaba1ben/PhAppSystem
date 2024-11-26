@@ -1,13 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using PhAppUser.Domain.Entities;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
 using PhAppUser.Infrastructure.Context;
 using PhAppUser.Domain.Enums;
 using Serilog;
+using PhAppUser.Application.DTOs;
 
 namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
@@ -193,6 +190,40 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
             {
                 Log.Error(ex, "Error al intentar inactivar el usuario con ID {UsuarioId}", usuarioId);
                 throw new Exception("Ocurrió un error al intentar inactivar el usuario.", ex);
+            }
+        }
+        // Búsqueda de usuarios inactivos
+        public async Task<IEnumerable<UsuarioInactivoDto>> GetUsuariosInactivosAsync()
+        {
+            return await _context.Set<CuentaUsuario>()
+                .Where(cu => !cu.EsActivo) // Usuarios inactivos
+                .Select(cu => new UsuarioInactivoDto
+                {
+                    NombresCompletos = cu.NombresCompletos,
+                    ApellidosCompletos = cu.ApellidosCompletos,
+                    Identificacion = cu.Identificacion,
+                    FechaInactivacion = cu.FechaInactivacion ?? DateTime.MinValue, // Default para evitar nulos
+                    MotivoInactivacion = cu.FechaInactivacion.HasValue
+                        ? "Automática por afiliación" // Personaliza esto según tu lógica
+                        : "Inactivación manual",
+                    NombreUsuario = cu.NombreUsuario
+                })
+                .ToListAsync();
+        }
+        public async Task<bool> ExisteIdentificacionAsync(string identificacion)
+        {
+            if (string.IsNullOrWhiteSpace(identificacion))
+                throw new ArgumentException("La identificación no puede ser nula o vacia", nameof(identificacion));
+
+            try
+            {
+                // PUNTO DE INTERRUPCIÓN
+                return await _context.CuentasUsuarios.AnyAsync(cu => cu.Identificacion == identificacion);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error al validar si la identificación ya existe: {identificacion}", identificacion);
+                throw new Exception($"Error al validar la existencia de la identificación {identificacion}", ex);
             }
         }
     }

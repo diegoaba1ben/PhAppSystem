@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PhAppUser.Domain.Entities;
+using PhAppUser.Infrastructure.Context;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
 
 namespace PhAppUser.Infrastructure.Repositories.Implementations
@@ -12,7 +13,7 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
     {
        
 
-        public RepLegalRepository(DbContext context) : base(context) {}
+        public RepLegalRepository(PhAppUserDbContext context) : base(context) {}
 
         public async Task<bool> ExisteCertLegalAsync(string certLegal)
         {

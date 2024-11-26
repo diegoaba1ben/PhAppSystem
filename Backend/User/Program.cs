@@ -10,6 +10,7 @@ using PhAppUser.Application.Mappers;
 using PhAppUser.Application.Queries;
 using PhAppUser.Application.DTOs;
 using Serilog;
+using PhAppUser.Application.Services.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,8 +36,8 @@ builder.Services.AddDbContext<PhAppUserDbContext>(options =>
 // Configuración de Kestrel
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenLocalhost(5600);
-    // options.ListenLocalhost(7010, listenOptions => listenOptions.UseHttps());
+    options.ListenLocalhost(5700);
+    options.ListenLocalhost(5701, listenOptions => listenOptions.UseHttps());
 });
 
 // Configuración de servicios
@@ -51,8 +52,13 @@ builder.Host.UseSerilog((context, config) =>
         .WriteTo.Console() // Logs en consola
         .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day) // Logs diarios
         .Enrich.FromLogContext() // Agrega contexto adicional
-        .MinimumLevel.Debug(); // Nivel de log mínimo
+        .MinimumLevel.Information(); // Nivel de log mínimo
 });
+
+// Configuración de logger para la aplicación
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
 // Registrar repositorios
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
@@ -65,6 +71,9 @@ builder.Services.AddScoped<IRolRepository, RolRepository>();
 builder.Services.AddScoped<IAreaRepository, AreaRepository>();
 builder.Services.AddScoped<IRepLegalRepository, RepLegalRepository>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
+// Registro de servicios de validación
+builder.Services.AddScoped<DatabaseValidationService>();
 
 // Configuración de AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());

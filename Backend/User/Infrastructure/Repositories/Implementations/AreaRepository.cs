@@ -4,13 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PhAppUser.Domain.Entities;
+using PhAppUser.Infrastructure.Context;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
 
 namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class AreaRepository : GenericRepository<Area>, IAreaRepository
     {
-        public AreaRepository(DbContext context) : base(context) { }
+        public AreaRepository(PhAppUserDbContext context) : base(context) { }
 
         public async Task<Area?> BuscarPorNombreAsync(string nombre)
         {

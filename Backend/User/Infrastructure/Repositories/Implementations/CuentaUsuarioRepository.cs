@@ -217,7 +217,7 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
 
             try
             {
-                // PUNTO DE INTERRUPCIÓN
+
                 return await _context.CuentasUsuarios.AnyAsync(cu => cu.Identificacion == identificacion);
             }
             catch (Exception ex)

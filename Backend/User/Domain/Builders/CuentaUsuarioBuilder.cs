@@ -1,6 +1,7 @@
 using System;
 using PhAppUser.Domain.Enums;
 using PhAppUser.Domain.Entities;
+using PhAppUser.Domain.Validators;
 
 namespace PhAppUser.Domain.Builders
 {
@@ -156,11 +157,10 @@ namespace PhAppUser.Domain.Builders
         // Métodos de auditoría a Afiliación.
         public CuentaUsuarioBuilder ConIntento(int intentos)
         {
-            if(intentos < 0)
+            if(intentos > 2)
             {
-                throw new ArgumentException("El aplazamiento no puede ser negativo");
-            }   
-            _cuentaUsuario.Intento = intentos; 
+                _cuentaUsuario.Bloqueado = true;
+            }    
             return this;
         }
         public CuentaUsuarioBuilder ConBloqueado(bool bloqueado)
@@ -171,20 +171,49 @@ namespace PhAppUser.Domain.Builders
 
         public CuentaUsuario Build()
         {
-            if(_cuentaUsuario.TipoContrato == TipoContrato.Empleado && _cuentaUsuario.SujetoRetencion == null)
+            if (!CuentaUsuarioCustomValidations.ValidarSujetoRetencion(_cuentaUsuario))
             {
-              throw new InvalidOperationException("El campo sujeto de retención debe definirse para empleados.");  
+                throw new InvalidOperationException("El campo Sujeto Retención debe definirse para empleados.");
             }
-            if(_cuentaUsuario.TipoContrato == TipoContrato.PrestadorDeServicios &&
-                (string.IsNullOrEmpty(_cuentaUsuario.RazonSocial) || !_cuentaUsuario.TipoIdTrib.HasValue))
-                {
-                    throw new InvalidOperationException("Los prestadores de servicios debe incluir Razón social y Tipo de Identificación Tributaria.");
-                }
-            if(_cuentaUsuario.Bloqueado && _cuentaUsuario.EsActivo)
+
+            if (!CuentaUsuarioCustomValidations.ValidarRazonSocIdTrib(_cuentaUsuario))
             {
-                throw new InvalidOperationException("Un usuario bloqueado no puede estar activo.");
+                throw new InvalidOperationException("Los prestadores de servicios deben incluir Razón Social y Tipo de Identificación Tributaria.");
             }
-            return _cuentaUsuario;
+
+            if (!CuentaUsuarioCustomValidations.ValidarAfiliacion(_cuentaUsuario))
+            {
+                throw new InvalidOperationException("Días pendientes es obligatorio para usuarios con afiliación parcial.");
+            }
+
+            if (!CuentaUsuarioCustomValidations.ValidarFechaInactivacion(_cuentaUsuario))
+            {
+                throw new InvalidOperationException("La fecha de inactivación no puede ser anterior a la fecha de registro.");
+            }
+
+            if (!CuentaUsuarioCustomValidations.ValidarEstadoUsuario(_cuentaUsuario))
+            {
+                throw new InvalidOperationException("Un usuario no puede estar activo y bloqueado al mismo tiempo.");
+            }
+
+            if(!CuentaUsuarioCustomValidations.ValidarPerfilesArea(_cuentaUsuario))
+            {
+                throw new InvalidOperationException("Todos los perfiles asociados al usuario deben contener un área administrativa asociada");
+            }
+
+             if (!CuentaUsuarioCustomValidations.ValidarPerfilesRoles(_cuentaUsuario))
+            {
+                throw new InvalidOperationException("Todos los perfiles asociados al usuario deben contener roles asociados.");
+            }
+
+            if (_cuentaUsuario.Afiliacion == Afiliacion.Parcial && (!_cuentaUsuario.DiasPendientes.HasValue || _cuentaUsuario.DiasPendientes <= 0))
+        {
+            throw new InvalidOperationException("Para una afiliación parcial, debe definirse un plazo en días mayor a 0.");
         }
+            // Retornar el objeto construido
+            return _cuentaUsuario;   
+
+        }
+
     }
 }

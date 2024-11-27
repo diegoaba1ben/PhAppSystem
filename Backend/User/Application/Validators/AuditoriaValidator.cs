@@ -3,37 +3,32 @@ using PhAppUser.Application.DTOs;
 
 namespace PhAppUser.Application.Validators
 {
-    /// <summary>
-    /// Validador para el DTO de auditoría de usuarios.
-    /// </summary>
     public class AuditUsuarioDtoValidator : AbstractValidator<AuditoriaUsuarioDto>
     {
         public AuditUsuarioDtoValidator()
         {
             // Validaciones para fechas de auditoría
             RuleFor(x => x.FechaRegistro)
-                .NotEmpty()
-                .WithMessage("La fecha de registro es obligatoria.")
-                .Must(date => BeFutureOrPastDate(date))
+                .Must(IsValidDate)
                 .WithMessage("La fecha de registro debe ser válida.");
 
             RuleFor(x => x.FechaInactivacion)
-                .Must(date => BeFutureOrPastDate(date))
+                .Must(IsValidDateNullable)
                 .When(x => x.FechaInactivacion.HasValue)
                 .WithMessage("La fecha de inactivación debe ser válida.");
 
-            // Validación para el historial de roles y permisos
+            // Validación para historial de roles y permisos
             RuleForEach(x => x.HistorialRolesPermisos)
                 .ChildRules(roles =>
                 {
                     roles.RuleFor(r => r.FechaRegistro)
                         .NotEmpty()
                         .WithMessage("La fecha de registro de rol es obligatoria.")
-                        .Must(date => BeFutureOrPastDate(date))
+                        .Must(IsValidDate)
                         .WithMessage("La fecha de registro del rol debe ser válida.");
 
                     roles.RuleFor(r => r.FechaRevocacion)
-                        .Must(date => BeFutureOrPastDate(date))
+                        .Must(IsValidDateNullable)
                         .When(r => r.FechaRevocacion.HasValue)
                         .WithMessage("La fecha de revocación del rol debe ser válida.");
                 });
@@ -45,20 +40,25 @@ namespace PhAppUser.Application.Validators
                     eventos.RuleFor(e => e.FechaEvento)
                         .NotEmpty()
                         .WithMessage("La fecha del evento es obligatoria.")
-                        .Must(date => BeFutureOrPastDate(date))
+                        .Must(IsValidDate)
                         .WithMessage("La fecha del evento debe ser válida.");
                 });
         }
 
         /// <summary>
-        /// Valida que la fecha sea válida (pasada o futura).
+        /// Valida que una fecha de tipo DateTime sea válida.
         /// </summary>
-        /// <param name="date">Fecha a validar.</param>
-        /// <returns>True si la fecha es válida o si es nula.</returns>
-        private bool BeFutureOrPastDate(DateTime? date)
+        private bool IsValidDate(DateTime date)
         {
-            // Cualquier fecha válida o nula es aceptable
-            return !date.HasValue || date.Value != default;
+            return date != default;
+        }
+
+        /// <summary>
+        /// Valida que una fecha de tipo DateTime? sea válida.
+        /// </summary>
+        private bool IsValidDateNullable(DateTime? date)
+        {
+            return !date.HasValue || IsValidDate(date.Value);
         }
     }
 }

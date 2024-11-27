@@ -55,8 +55,8 @@ namespace PhAppUser.Domain.Entities
         public DateTime FechaCreacion { get; internal set; } = DateTime.Now;
 
         // Atributos de auditoría para Afiliación
-        public int Intento { get; internal set; } = 0; //Maneja el número de aplazamientos.
-        public bool Bloqueado { get; internal set; } = false; //Maneja el bloqueo de la afiliación.
+        public int Intento { get; internal set; } = 0; // Número de intentos permitidos antes de bloquear al usuario.
+        public bool Bloqueado { get; internal set; } = false; // Si el usuario está bloqueado por exceder los intentos.
         #endregion
 
         // Navegación inversa a Perfiles (uno a muchos)
@@ -222,6 +222,10 @@ namespace PhAppUser.Domain.Entities
             public Builder ConIntento(int intentos)
             {
                 _usuario.Intento = intentos;
+                if(intentos > 0)
+                {
+                    _usuario.Bloqueado = true;
+                }
                 return this;
             }
             public Builder ConBloqueado (bool bloqueado)
@@ -246,6 +250,11 @@ namespace PhAppUser.Domain.Entities
                 if(_usuario.Bloqueado && _usuario.EsActivo)
                 {
                     throw new InvalidOperationException("Un usuario bloqueado no puede estar activo.");
+                }
+                
+                if (_usuario. Afiliacion == Afiliacion.Parcial && !_usuario.DiasPendientes.HasValue)
+                {
+                    throw new InvalidOperationException("Para una afiliación parcial debe definirse un plazo en días mayor a 0.");
                 }
                 return _usuario;
             }            

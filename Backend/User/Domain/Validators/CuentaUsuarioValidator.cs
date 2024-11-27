@@ -98,6 +98,32 @@ namespace PhAppUser.Domain.Validators
                 .Matches(@"^(?=.*\d)").WithMessage("La contraseña debe contener al menos un número.")
                 .Matches(@"^(?=.*[@$!%*?&])").WithMessage("La contraseña debe contener al menos un carácter especial (@$!%*?&).");
             #endregion
+
+            #region Validaciones avanzadas de CuentaUsuariocustomValidator
+            RuleFor(cu => cu)
+                .Must(CuentaUsuarioCustomValidations.ValidarRazonSocIdTrib)
+                .WithMessage("Los prestadores de servicios deben incluir Razón Social y Tipo de Identificación Tributaria.");
+
+            RuleFor(cu => cu)
+                .Must(CuentaUsuarioCustomValidations.ValidarAfiliacion)
+                .WithMessage("Días pendientes es obligatorio para usuarios con afiliación parcial.");
+
+            RuleFor(cu => cu)
+                .Must(CuentaUsuarioCustomValidations.ValidarFechaInactivacion)
+                .WithMessage("La fecha de inactivación no puede ser anterior a la fecha de registro.");
+
+            RuleFor(cu => cu)
+                .Must(CuentaUsuarioCustomValidations.ValidarEstadoUsuario)
+                .WithMessage("Un usuario no puede estar activo y bloqueado al mismo tiempo.");
+
+            RuleFor(cu => cu)
+                .Must(CuentaUsuarioCustomValidations.ValidarPerfilesArea)
+                .WithMessage("Todos los perfiles asociados al usuario debe conteneer un área administrativa.");
+
+            RuleFor(cu => cu)
+                .Must(CuentaUsuarioCustomValidations.ValidarPerfilesRoles)
+                .WithMessage("Todos los perfiles asociados al usuario deben contener roles.");
+            #endregion
         }
     }
 }

@@ -11,7 +11,7 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class PermisoRepository : GenericRepository<Permiso>, IPermisoRepository
     {
-        public PermisoRepository(PhAppUserDbContext context) : base(context) { }
+        public PermisoRepository(PhAppUserDbContext context, ILogger<PermisoRepository> logger) : base(context, logger) { }
 
         public async Task<Permiso?> BuscarPorCodigoAsync(string codigo)
         {

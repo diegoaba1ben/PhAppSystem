@@ -12,7 +12,7 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class PerfilRepository : GenericRepository<Perfil>, IPerfilRepository
     {
-        public PerfilRepository(PhAppUserDbContext context) : base(context) { }
+        public PerfilRepository(PhAppUserDbContext context, ILogger<PerfilRepository> logger) : base(context, logger) { }
 
         // Métodos básicos de búsqueda y validación
         public async Task<Perfil?> BuscarPorIdAsync(Guid perfilId)

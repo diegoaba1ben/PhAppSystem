@@ -16,20 +16,20 @@ namespace PhAppUser.Controllers
     public class CuentaUsuarioController : ControllerBase
     {
         private readonly ICuentaUsuarioRepository _cuentaUsuarioRepository;
-        private readonly ISaludRepository _saludRepository = null!;
-        private readonly IPensionRepository _pensionRepository = null!;
-        private readonly IPerfilRepository _perfilRepository = null!;
+        private readonly ISaludRepository _saludRepository;
+        private readonly IPensionRepository _pensionRepository;
+        private readonly IPerfilRepository _perfilRepository;
 
         public CuentaUsuarioController(
             ICuentaUsuarioRepository cuentaUsuarioRepository,
-            ISaludRepository _saludRepository,
-            IPensionRepository _pensionRepository,
-            PerfilRepository _perfilRepository)
+            ISaludRepository  saludRepository,
+            IPensionRepository pensionRepository,
+            IPerfilRepository perfilRepository)
         {
             _cuentaUsuarioRepository = cuentaUsuarioRepository ?? throw new ArgumentNullException(nameof(cuentaUsuarioRepository));
-            _saludRepository = _saludRepository ?? throw new ArgumentNullException(nameof(_saludRepository));
-            _pensionRepository = _pensionRepository ?? throw new ArgumentNullException(nameof(_pensionRepository));
-            _perfilRepository = _perfilRepository ?? throw new ArgumentNullException(nameof(_perfilRepository));
+            _saludRepository = _saludRepository ?? throw new ArgumentNullException(nameof(saludRepository));
+            _pensionRepository = _pensionRepository ?? throw new ArgumentNullException(nameof(pensionRepository));
+            _perfilRepository = _perfilRepository ?? throw new ArgumentNullException(nameof(perfilRepository));
 
         }
 
@@ -191,11 +191,16 @@ namespace PhAppUser.Controllers
                 // Obtener el usuario por ID
                 var usuario = await _cuentaUsuarioRepository.GetByIdAsync(id);
 
+                if (id == Guid.Empty)
+                {
+                    return BadRequest(new {mensaje = $"El ID del usuario no puede estar vacío." });
+                }
                 if (usuario == null)
                 {
                     return NotFound(new { mensaje = $"Usuario con ID {id} no encontrado." });
                 }
 
+                // Validación: El usuario debe estar bloqueado
                 if (!usuario.Bloqueado)
                 {
                     return BadRequest(new { mensaje = "El usuario no está bloqueado." });
@@ -228,7 +233,7 @@ namespace PhAppUser.Controllers
                 // Reactivar usuario
                 usuario.EsActivo = true;
                 usuario.Bloqueado = false;
-                usuario.Intento = 0;
+                usuario.Intento = 0; //Aquí se reinician los intentos o plazos fallidos.
                 await _cuentaUsuarioRepository.UpdateAsync(usuario);
 
                 return Ok(new { mensaje = "Usuario reactivado exitosamente." });

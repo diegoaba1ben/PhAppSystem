@@ -1,111 +1,88 @@
 using Microsoft.EntityFrameworkCore;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
+using PhAppUser.Infrastructure.Helpers;
+using PhAppUser.Infrastructure.Context;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Serilog;
-using PhAppUser.Infrastructure.Context;
 
 namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
         protected readonly PhAppUserDbContext _context;
+        private readonly ILogger<GenericRepository<T>> _logger;
 
-        public GenericRepository(PhAppUserDbContext context)
+        public GenericRepository(PhAppUserDbContext context, ILogger<GenericRepository<T>> logger)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IEnumerable<T>> GetAllAsync()
         {
-            try
-            {
-                return await _context.Set<T>().ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error al obtener todos los registros de {EntityName}", typeof(T).Name);
-                throw new Exception($"Error al obtener todos los registros de {typeof(T).Name}.", ex);
-            }
+            return await ExceptionHandler.HandleAsync(
+                async () => await _context.Set<T>().ToListAsync(),
+                _logger,
+                $"Error al obtener todos los registros de {typeof(T).Name}."
+            );
         }
 
         public async Task<T?> GetByIdAsync(Guid id)
         {
-            try
-            {
-                return await _context.Set<T>().FindAsync(id);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error al obtener el registro con ID {Id} de {EntityName}", id, typeof(T).Name);
-                throw new Exception($"Error al obtener el registro con ID {id} de {typeof(T).Name}.", ex);
-            }
+            return await ExceptionHandler.HandleAsync(
+                async () => await _context.Set<T>().FindAsync(id),
+                _logger,
+                $"Error al obtener el registro con ID {id} de {typeof(T).Name}."
+            );
         }
 
         public async Task AddAsync(T entity)
         {
-            try
-            {
-                await _context.Set<T>().AddAsync(entity);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException dbEx)
-            {
-                Log.Error(dbEx, "Error al intentar agregar un nuevo registro a {EntityName}", typeof(T).Name);
-                throw new Exception($"Error al intentar agregar un nuevo registro a {typeof(T).Name}.", dbEx);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error general al intentar agregar un nuevo registro a {EntityName}", typeof(T).Name);
-                throw new Exception($"Error general al intentar agregar un nuevo registro a {typeof(T).Name}.", ex);
-            }
+            await ExceptionHandler.HandleAsync(
+                async () =>
+                {
+                    await _context.Set<T>().AddAsync(entity);
+                    await _context.SaveChangesAsync();
+                },
+                _logger,
+                $"Error al intentar agregar un nuevo registro a {typeof(T).Name}."
+            );
         }
 
         public async Task UpdateAsync(T entity)
         {
-            try
-            {
-                _context.Set<T>().Update(entity);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException dbEx)
-            {
-                Log.Error(dbEx, "Error de concurrencia al intentar actualizar un registro en {EntityName}", typeof(T).Name);
-                throw new Exception($"Error de concurrencia al intentar actualizar un registro en {typeof(T).Name}.", dbEx);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error general al intentar actualizar un registro en {EntityName}", typeof(T).Name);
-                throw new Exception($"Error general al intentar actualizar un registro en {typeof(T).Name}.", ex);
-            }
+            await ExceptionHandler.HandleAsync(
+                async () =>
+                {
+                    _context.Set<T>().Update(entity);
+                    await _context.SaveChangesAsync();
+                },
+                _logger,
+                $"Error al intentar actualizar un registro en {typeof(T).Name}."
+            );
         }
 
         public async Task DeleteAsync(Guid id)
         {
-            try
-            {
-                var entity = await GetByIdAsync(id);
-                if (entity == null)
+            await ExceptionHandler.HandleAsync(
+                async () =>
                 {
-                    Log.Warning("No se encontró el registro con ID {Id} en {EntityName} para eliminar.", id, typeof(T).Name);
-                    throw new KeyNotFoundException($"No se encontró el registro con ID {id} en {typeof(T).Name}.");
-                }
+                    var entity = await GetByIdAsync(id);
+                    if (entity == null)
+                    {
+                        var message = $"No se encontró el registro con ID {id} en {typeof(T).Name}.";
+                        _logger.LogWarning(message);
+                        throw new KeyNotFoundException(message);
+                    }
 
-                _context.Set<T>().Remove(entity);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException dbEx)
-            {
-                Log.Error(dbEx, "Error al intentar eliminar un registro en {EntityName}", typeof(T).Name);
-                throw new Exception($"Error al intentar eliminar un registro en {typeof(T).Name}.", dbEx);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error general al intentar eliminar un registro en {EntityName}", typeof(T).Name);
-                throw new Exception($"Error general al intentar eliminar un registro en {typeof(T).Name}.", ex);
-            }
+                    _context.Set<T>().Remove(entity);
+                    await _context.SaveChangesAsync();
+                },
+                _logger,
+                $"Error al intentar eliminar un registro en {typeof(T).Name}."
+            );
         }
     }
 }
-

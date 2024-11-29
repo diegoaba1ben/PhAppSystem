@@ -137,9 +137,10 @@ namespace PhAppUser.Domain.Builders
             return this;
         }
 
-        public CuentaUsuarioBuilder ConAfiliacion(Afiliacion afiliacion)
+        public CuentaUsuarioBuilder ConAfiliacion(Afiliacion afiliacion, int? diasPendientes = null)
         {
             _cuentaUsuario.Afiliacion = afiliacion;
+            _cuentaUsuario.DiasPendientes = diasPendientes;
             return this;
         }
 
@@ -157,10 +158,11 @@ namespace PhAppUser.Domain.Builders
         // Métodos de auditoría a Afiliación.
         public CuentaUsuarioBuilder ConIntento(int intentos)
         {
-            if(intentos > 2)
+            if (intentos > 2)
             {
-                _cuentaUsuario.Bloqueado = true;
-            }    
+                _cuentaUsuario.Intento = intentos;
+                _cuentaUsuario.Bloqueado = intentos > 2;
+            }
             return this;
         }
         public CuentaUsuarioBuilder ConBloqueado(bool bloqueado)
@@ -171,6 +173,7 @@ namespace PhAppUser.Domain.Builders
 
         public CuentaUsuario Build()
         {
+            //Validacioines centralizadas
             if (!CuentaUsuarioCustomValidations.ValidarSujetoRetencion(_cuentaUsuario))
             {
                 throw new InvalidOperationException("El campo Sujeto Retención debe definirse para empleados.");
@@ -196,24 +199,19 @@ namespace PhAppUser.Domain.Builders
                 throw new InvalidOperationException("Un usuario no puede estar activo y bloqueado al mismo tiempo.");
             }
 
-            if(!CuentaUsuarioCustomValidations.ValidarPerfilesArea(_cuentaUsuario))
+            if (!CuentaUsuarioCustomValidations.ValidarPerfilesArea(_cuentaUsuario))
             {
-                throw new InvalidOperationException("Todos los perfiles asociados al usuario deben contener un área administrativa asociada");
+                throw new InvalidOperationException("Todos los perfiles asociados al usuario deben contener un área administrativa asociada.");
             }
 
-             if (!CuentaUsuarioCustomValidations.ValidarPerfilesRoles(_cuentaUsuario))
+            if (!CuentaUsuarioCustomValidations.ValidarPerfilesRoles(_cuentaUsuario))
             {
                 throw new InvalidOperationException("Todos los perfiles asociados al usuario deben contener roles asociados.");
             }
 
-            if (_cuentaUsuario.Afiliacion == Afiliacion.Parcial && (!_cuentaUsuario.DiasPendientes.HasValue || _cuentaUsuario.DiasPendientes <= 0))
-        {
-            throw new InvalidOperationException("Para una afiliación parcial, debe definirse un plazo en días mayor a 0.");
-        }
             // Retornar el objeto construido
-            return _cuentaUsuario;   
+            return _cuentaUsuario;
 
         }
-
     }
 }

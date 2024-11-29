@@ -26,6 +26,7 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("La cadena de conexión no está configurada. Verifique el archivo de configuración o las variables de entorno.");
 }
 
+// Configuración de base de datos
 builder.Services.AddDbContext<PhAppUserDbContext>(options =>
     options.UseMySql(
         connectionString,
@@ -40,11 +41,6 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ListenLocalhost(5701, listenOptions => listenOptions.UseHttps());
 });
 
-// Configuración de servicios
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
 // Configuración de Serilog como logger principal
 builder.Host.UseSerilog((context, config) =>
 {
@@ -55,10 +51,10 @@ builder.Host.UseSerilog((context, config) =>
         .MinimumLevel.Information(); // Nivel de log mínimo
 });
 
-// Configuración de logger para la aplicación
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.SetMinimumLevel(LogLevel.Debug);
+// Configuración de servicios
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 // Registrar repositorios
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
@@ -70,7 +66,6 @@ builder.Services.AddScoped<IPermisoRepository, PermisoRepository>();
 builder.Services.AddScoped<IRolRepository, RolRepository>();
 builder.Services.AddScoped<IAreaRepository, AreaRepository>();
 builder.Services.AddScoped<IRepLegalRepository, RepLegalRepository>();
-builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 // Registro de servicios de validación
 builder.Services.AddScoped<DatabaseValidationService>();

@@ -3,231 +3,197 @@ using PhAppUser.Domain.Entities;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
 using PhAppUser.Infrastructure.Context;
 using PhAppUser.Domain.Enums;
-using Serilog;
+using Microsoft.Extensions.Logging;
+using PhAppUser.Infrastructure.Helpers;
 using PhAppUser.Application.DTOs;
+using Microsoft.AspNetCore.Diagnostics;
 
 namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class CuentaUsuarioRepository : GenericRepository<CuentaUsuario>, ICuentaUsuarioRepository
     {
-        public CuentaUsuarioRepository(PhAppUserDbContext context) : base(context)
+        private readonly ILogger<CuentaUsuarioRepository> _logger;
+
+        public CuentaUsuarioRepository(PhAppUserDbContext context, ILogger<CuentaUsuarioRepository> logger) : base(context, logger)
         {
+            _logger = logger;
         }
 
-        // Método de búsqueda avanzada
         public async Task<IEnumerable<CuentaUsuario>> SearchUsuarioAsync(string searchTerm)
         {
-            try
+            return await ExceptionHandler.HandleAsync(async () =>
             {
-                return await _context.Set<CuentaUsuario>()
-                .Where(cu => cu.NombresCompletos.Contains(searchTerm) ||
-                             cu.ApellidosCompletos.Contains(searchTerm) ||
-                             cu.Identificacion.Contains(searchTerm))
-                .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error al realizar la búsqueda de usuarios con el término {SearchTerm}", searchTerm);
-                throw new Exception($"Error en SearhUsuarioAsync con términos {searchTerm}", ex);
-            }
-
+                return await _context.CuentasUsuarios
+                    .Where(cu => cu.NombresCompletos.Contains(searchTerm) ||
+                                 cu.ApellidosCompletos.Contains(searchTerm) ||
+                                 cu.Identificacion.Contains(searchTerm))
+                    .ToListAsync();
+            },
+            _logger,
+            $"Error al realizar la búsqueda de usuarios con el término {searchTerm}");
         }
 
-        // Implementación para obtener los usuarios activos
         public async Task<IEnumerable<CuentaUsuario>> GetUsuariosActivosAsync()
         {
-            try
+            return await ExceptionHandler.HandleAsync(async () =>
             {
-                return await _context.Set<CuentaUsuario>()
-                .Where(cu => cu.EsActivo)
-                .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error al obtener los usuarios activos {SearchTerm}");
-                throw new Exception("Ocurrió un error al buscar usuarios activos", ex);
-            }
-
+                return await _context.CuentasUsuarios
+                    .Where(cu => cu.EsActivo)
+                    .ToListAsync();
+            },
+            _logger,
+            "Error al obtener usuarios activos");
         }
 
-        // Implementación para obtener usuarios por perfil
         public async Task<IEnumerable<CuentaUsuario>> GetUsuarioByPerfilAsync(Guid perfilId)
         {
-            try
+            return await ExceptionHandler.HandleAsync(async () =>
             {
-                return await _context.Set<CuentaUsuario>()
-                .Where(cu => cu.Perfiles.Any(p => p.Id == perfilId))
-                .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error al intentar obteneer usuarios por perfil");
-                throw new Exception("Ocurrión un error inesperado al buscar usuarios por perfil", ex);
-            }
-
+                return await _context.CuentasUsuarios
+                    .Where(cu => cu.Perfiles.Any(p => p.Id == perfilId))
+                    .ToListAsync();
+            },
+            _logger,
+            $"Error al obtener usuarios por perfil con ID {perfilId}");
         }
 
-        // Implementación para obtener usuarios con perfiles y roles
         public async Task<IEnumerable<CuentaUsuario>> GetUsuarioByRolesAsync()
         {
-            try
+            return await ExceptionHandler.HandleAsync(async () =>
             {
-                return await _context.Set<CuentaUsuario>()
-                    .Include(cu => cu.Perfiles) // Carga los perfiles asociados al usuario
-                        .ThenInclude(perfil => perfil.Roles) // Carga los roles asociados a los perfiles
-                    .Where(cu => cu.Perfiles.Any(p => p.Roles.Any())) // Filtra solo usuarios con roles
-                    .ToListAsync(); // Convierte el resultado a lista
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error al obtener usuarios con perfiles y roles");
-                throw new Exception("Error al obtener usuarios con perfiles y roles", ex);
-            }
+                return await _context.CuentasUsuarios
+                    .Include(cu => cu.Perfiles)
+                        .ThenInclude(perfil => perfil.Roles)
+                    .Where(cu => cu.Perfiles.Any(p => p.Roles.Any()))
+                    .ToListAsync();
+            },
+            _logger,
+            "Error al obtener usuarios con perfiles y roles");
         }
-        // Implementación para obtener usuarios por tipo de contrato
+
         public async Task<IEnumerable<CuentaUsuario>> GetUsuariosByTipoContratoAsync(TipoContrato tipoContrato)
         {
-            try
+            return await ExceptionHandler.HandleAsync(async () =>
             {
-                return await _context.Set<CuentaUsuario>()
-                .Where(cu => cu.TipoContrato == tipoContrato)
-                .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Error("obtener usuarios por tipo de contrato {cuentaUsuairo.TipoContrato}");
-                throw new Exception("Ocurrió un error inesperado al buscar usuarios por tipo de contrato", ex);
-            }
-
+                return await _context.CuentasUsuarios
+                    .Where(cu => cu.TipoContrato == tipoContrato)
+                    .ToListAsync();
+            },
+            _logger,
+            $"Error al obtener usuarios por tipo de contrato: {tipoContrato}");
         }
 
-        // Implementación para verificar si el nombre de usuario ya existe
         public async Task<bool> ExisteNombreUsuarioAsync(string nombreUsuario)
         {
-            if (string.IsNullOrEmpty(nombreUsuario))
+            if (string.IsNullOrWhiteSpace(nombreUsuario))
                 throw new ArgumentException("El nombre de usuario no puede ser nulo o vacío");
-            try
-            {
-                return await _context.Set<CuentaUsuario>()
-                .AnyAsync(cu => cu.NombreUsuario == nombreUsuario);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error al validar si el nombre de usuario existe: {NombreUsuario}");
-                throw new Exception("Ocurrió un error al validar la existencia del nombre de usuario {NombreUsuario}", ex);
-            }
 
+            return await ExceptionHandler.HandleAsync(async () =>
+            {
+                return await _context.CuentasUsuarios
+                    .AnyAsync(cu => cu.NombreUsuario == nombreUsuario);
+            },
+            _logger,
+            $"Error al validar si el nombre de usuario existe: {nombreUsuario}");
         }
 
-        // Obtener usuarios por última fecha de inicio de sesión
         public async Task<IEnumerable<CuentaUsuario>> GetUsuariosByUltimoLoginAsync(DateTime date)
         {
-            try
+            return await ExceptionHandler.HandleAsync(async () =>
             {
-                return await _context.Set<CuentaUsuario>()
-                .Where(cu => cu.FechaUltimoLogin >= date)
-                .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error al intentar obtener usuarios po su última fecha de inicio de sesión");
-                throw new Exception("Ocurrió un error inesperado al buscar la última fecha de inicio de sesión de un usuario");
-            }
-
+                return await _context.CuentasUsuarios
+                    .Where(cu => cu.FechaUltimoLogin >= date)
+                    .ToListAsync();
+            },
+            _logger,
+            $"Error al obtener usuarios por última fecha de inicio de sesión desde {date}");
         }
 
-        // Obtener usuarios con afiliaciones pendientes
         public async Task<IEnumerable<CuentaUsuario>> GetUsuariosAfiliacionPendienteAsync()
         {
-            try
+            return await ExceptionHandler.HandleAsync(async () =>
             {
-                return await _context.Set<CuentaUsuario>()
-                .Where(cu => cu.Afiliacion == Afiliacion.Parcial || cu.DiasPendientes.HasValue && cu.DiasPendientes > 0) // Ajustar según propiedad correcta
-                .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error al obtener usuarios con afiliaciones pendientes");
-                throw new Exception("Ocurrió un error inesperado al buscar usuarios con afiliaciones pendientes.", ex);
-            }
-
+                return await _context.CuentasUsuarios
+                    .Where(cu => cu.Afiliacion == Afiliacion.Parcial && cu.DiasPendientes.HasValue && cu.DiasPendientes > 0)
+                    .ToListAsync();
+            },
+            _logger,
+            "Error al obtener usuarios con afiliaciones pendientes");
         }
-        // Método para inactivar a un usuario.
+
         public async Task InactivarUsuarioAsync(Guid usuarioId, DateTime fechaInactivacion)
         {
-            try
+            await ExceptionHandler.HandleAsync(async () =>
             {
-                var usuario = await _context.Set<CuentaUsuario>()
-                    .Include(cu => cu.Perfiles) // Incluir relaciones necesarias
-                    .ThenInclude(p => p.Roles)
+                var usuario = await _context.CuentasUsuarios
+                    .Include(cu => cu.Perfiles)
+                        .ThenInclude(p => p.Roles)
                     .FirstOrDefaultAsync(cu => cu.Id == usuarioId);
 
                 if (usuario == null)
-                {
-                    Log.Warning("Intento de inactivación fallido: Usuario con ID {UsuarioId} no encontrado.", usuarioId);
                     throw new KeyNotFoundException($"No se encontró el usuario con ID {usuarioId}");
-                }
 
-                // Actualizar propiedades del usuario
                 usuario.EsActivo = false;
                 usuario.FechaInactivacion = fechaInactivacion;
 
-                // Revocar perfiles y permisos
                 foreach (var perfil in usuario.Perfiles)
                 {
-                    perfil.Roles.Clear(); // Eliminar roles asociados al perfil
+                    perfil.Roles.Clear();
                 }
-                usuario.Perfiles.Clear(); // Eliminar perfiles asociados
+                usuario.Perfiles.Clear();
 
-                // Guardar cambios en la base de datos
-                _context.Set<CuentaUsuario>().Update(usuario);
+                _context.CuentasUsuarios.Update(usuario);
                 await _context.SaveChangesAsync();
-
-                // Registrar la acción en el log
-                Log.Information("Usuario {UsuarioId} inactivado exitosamente el {FechaInactivacion}", usuarioId, fechaInactivacion);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error al intentar inactivar el usuario con ID {UsuarioId}", usuarioId);
-                throw new Exception("Ocurrió un error al intentar inactivar el usuario.", ex);
-            }
+            },
+            _logger,
+            $"Error al intentar inactivar el usuario con ID {usuarioId}");
         }
-        // Búsqueda de usuarios inactivos
+
         public async Task<IEnumerable<UsuarioInactivoDto>> GetUsuariosInactivosAsync()
         {
-            return await _context.Set<CuentaUsuario>()
-                .Where(cu => !cu.EsActivo) // Usuarios inactivos
-                .Select(cu => new UsuarioInactivoDto
-                {
-                    NombresCompletos = cu.NombresCompletos,
-                    ApellidosCompletos = cu.ApellidosCompletos,
-                    Identificacion = cu.Identificacion,
-                    FechaInactivacion = cu.FechaInactivacion ?? DateTime.MinValue, // Default para evitar nulos
-                    MotivoInactivacion = cu.FechaInactivacion.HasValue
-                        ? "Automática por afiliación" // Personaliza esto según tu lógica
-                        : "Inactivación manual",
-                    NombreUsuario = cu.NombreUsuario
-                })
-                .ToListAsync();
+            return await ExceptionHandler.HandleAsync(async () =>
+            {
+                return await _context.CuentasUsuarios
+                    .Where(cu => !cu.EsActivo) // Usuarios inactivos
+                    .Select(cu => new UsuarioInactivoDto
+                    {
+                        NombresCompletos = cu.NombresCompletos,
+                        ApellidosCompletos = cu.ApellidosCompletos,
+                        Identificacion = cu.Identificacion,
+                        FechaInactivacion = cu.FechaInactivacion ?? DateTime.MinValue,
+                        MotivoInactivacion = cu.FechaInactivacion.HasValue
+                            ? "Automática por afiliación"
+                            : "Inactivación manual",
+                        NombreUsuario = cu.NombreUsuario
+                    })
+                    .ToListAsync();
+            }, _logger, nameof(GetUsuariosInactivosAsync));
         }
+
+
+
         public async Task<bool> ExisteIdentificacionAsync(string identificacion)
         {
             if (string.IsNullOrWhiteSpace(identificacion))
-                throw new ArgumentException("La identificación no puede ser nula o vacia", nameof(identificacion));
+                throw new ArgumentException("La identificación no puede ser nula o vacía", nameof(identificacion));
 
-            try
+            return await ExceptionHandler.HandleAsync(async () =>
             {
+                return await _context.CuentasUsuarios
+                    .AnyAsync(cu => cu.Identificacion == identificacion);
+            },
+            _logger,
+            $"Error al validar si la identificación ya existe: {identificacion}");
+        }
 
-                return await _context.CuentasUsuarios.AnyAsync(cu => cu.Identificacion == identificacion);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error al validar si la identificación ya existe: {identificacion}", identificacion);
-                throw new Exception($"Error al validar la existencia de la identificación {identificacion}", ex);
-            }
+        Task<IEnumerable<UsuarioInactivoDto>> ICuentaUsuarioRepository.GetUsuariosInactivosAsync()
+        {
+            throw new NotImplementedException();
         }
     }
 }
+
+
 
 
 

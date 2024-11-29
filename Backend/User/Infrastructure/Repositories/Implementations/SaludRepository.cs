@@ -9,7 +9,7 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class SaludRepository : GenericRepository<Salud>, ISaludRepository
     {
-        public SaludRepository(PhAppUserDbContext context) : base(context) { }
+        public SaludRepository(PhAppUserDbContext context, ILogger<SaludRepository>logger) : base(context, logger) { }
 
         /// <summary>
         /// Verifica si ya existe un registro con el mismo número de afiliación.

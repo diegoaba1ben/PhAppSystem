@@ -13,7 +13,7 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
     {
        
 
-        public RepLegalRepository(PhAppUserDbContext context) : base(context) {}
+        public RepLegalRepository(PhAppUserDbContext context, ILogger<RepLegalRepository> logger) : base(context, logger) {}
 
         public async Task<bool> ExisteCertLegalAsync(string certLegal)
         {

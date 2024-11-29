@@ -9,8 +9,9 @@ namespace PhAppUser.Application.DTOs
     public class PerfilDto
     {
         public Guid Id { get; set; }
+
         // Relación simplificada de identificadores o nombres de usuarios
-        public List<string> Usuarios { get; set; } = new List<string>();
+        public List<UsuarioDto> Usuarios { get; set; } = new List<UsuarioDto>();
 
         // Relación con Rol: lista simplificada de nombre de roles
         public List<string> Roles { get; set; } = new List<string>();

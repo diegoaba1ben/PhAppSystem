@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using PhAppUser.Application.DTOs;
 using PhAppUser.Domain.Enums;
 
 namespace PhAppUser.Domain.Entities
@@ -60,7 +61,7 @@ namespace PhAppUser.Domain.Entities
         #endregion
 
         // Navegación inversa a Perfiles (uno a muchos)
-        public ICollection<Perfil> Perfiles { get; internal set; } = new List<Perfil>();       
+        public ICollection<Perfil> Perfiles { get; internal set; } = new List<Perfil>();
 
         // Constructor privado para forzar el uso del builder
         internal CuentaUsuario() { }
@@ -139,7 +140,7 @@ namespace PhAppUser.Domain.Entities
             }
             public Builder ConFechaInactivacion(DateTime fechaInactivacion)
             {
-                _usuario.FechaInactivacion = fechaInactivacion; 
+                _usuario.FechaInactivacion = fechaInactivacion;
                 return this;
             }
 
@@ -163,7 +164,7 @@ namespace PhAppUser.Domain.Entities
                 _usuario.TipoCuenta = tipoCuenta;
                 return this;
             }
-             public Builder ConTarjProf(string tarjProf)
+            public Builder ConTarjProf(string tarjProf)
             {
                 _usuario.TarjProf = tarjProf;
                 return this;
@@ -178,34 +179,35 @@ namespace PhAppUser.Domain.Entities
             }
             public Builder ConSujetoRetencion(bool? sujetoRetencion)
             {
-                if(_usuario.TipoContrato == TipoContrato.Empleado)
+                if (_usuario.TipoContrato == TipoContrato.Empleado)
                 {
                     _usuario.SujetoRetencion = sujetoRetencion;
                 }
-                return this; 
+                return this;
             }
             public Builder ConTipoIdTrib(TipoIdTrib? tipoIdTrib)
             {
-                if(_usuario.TipoContrato == TipoContrato.PrestadorDeServicios)
+                if (_usuario.TipoContrato == TipoContrato.PrestadorDeServicios)
                 {
                     _usuario.TipoIdTrib = tipoIdTrib;
                 }
                 return this;
             }
-            public Builder ConRazonsocial(string  razonsocial)
+            public Builder ConRazonsocial(string razonsocial)
             {
-                if(_usuario.TipoContrato == TipoContrato.PrestadorDeServicios)
+                if (_usuario.TipoContrato == TipoContrato.PrestadorDeServicios)
                 {
                     _usuario.RazonSocial = razonsocial;
-                } 
+                }
                 return this;
             }
             #endregion
-            
+
             #region Métodos concatenados para los atributos de seguridad social
-            public Builder ConAfiliacion(Afiliacion afiliacion)
+            public Builder ConAfiliacion(Afiliacion afiliacion, int? diasPendientes = null)
             {
                 _usuario.Afiliacion = afiliacion;
+                _usuario.DiasPendientes = afiliacion == Afiliacion.Parcial? diasPendientes: null;
                 return this;
             }
             public Builder ConDiasPendientes(int? diasPendientes)
@@ -219,16 +221,19 @@ namespace PhAppUser.Domain.Entities
                 return this;
             }
             // Métodos para auditoría de Afiliación
-            public Builder ConIntento(int intentos)
+            public Builder ConIntentos(int intentos)
             {
-                _usuario.Intento = intentos;
-                if(intentos > 0)
+                if (intentos < 0)
                 {
-                    _usuario.Bloqueado = true;
+                    throw new ArgumentException("Los intentos no pueden ser negativos.");
                 }
+
+                _usuario.Intento = intentos;
+                _usuario.Bloqueado = intentos > 2;
+
                 return this;
             }
-            public Builder ConBloqueado (bool bloqueado)
+            public Builder ConBloqueado(bool bloqueado)
             {
                 _usuario.Bloqueado = bloqueado;
                 return this;
@@ -237,27 +242,17 @@ namespace PhAppUser.Domain.Entities
             // Constructor final para construir la instancia
             public CuentaUsuario Build()
             {
-                
-                if (_usuario.TipoContrato == TipoContrato.Empleado && _usuario.SujetoRetencion == null)
-                {
-                    throw new InvalidOperationException("El campo Sujeto Retencion debe definirse para empleados.");
-                }
-                if(_usuario.TipoContrato == TipoContrato.PrestadorDeServicios &&
-                    (string.IsNullOrEmpty(_usuario.RazonSocial) || !_usuario.TipoIdTrib.HasValue))
-                    {
-                        throw new InvalidOperationException("Los prestadores de servicios deben incluir Razón Social y Tipo de identificacion Tirbutaria");
-                    } 
-                if(_usuario.Bloqueado && _usuario.EsActivo)
+                //Validación mínima para asegurar la consistencia del objeto
+                if( _usuario.Bloqueado && _usuario.EsActivo)
                 {
                     throw new InvalidOperationException("Un usuario bloqueado no puede estar activo.");
                 }
-                
-                if (_usuario. Afiliacion == Afiliacion.Parcial && !_usuario.DiasPendientes.HasValue)
+                if(_usuario.Afiliacion == Afiliacion.Parcial && (!_usuario.DiasPendientes.HasValue || _usuario.DiasPendientes <= 0))
                 {
-                    throw new InvalidOperationException("Para una afiliación parcial debe definirse un plazo en días mayor a 0.");
+                    throw new InvalidOperationException("Para una afiliación parcial debe definirse un plazo mayor a 0 días");
                 }
                 return _usuario;
-            }            
+            }
         }
     }
 }

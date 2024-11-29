@@ -9,7 +9,7 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class RolRepository : GenericRepository<Rol>, IRolRepository
     {
-        public RolRepository(PhAppUserDbContext context) : base(context) { }
+        public RolRepository(PhAppUserDbContext context, ILogger<RolRepository> logger) : base(context, logger) { }
 
         public async Task<Rol?> BuscarPorNombreAsync(string nombre)
         {

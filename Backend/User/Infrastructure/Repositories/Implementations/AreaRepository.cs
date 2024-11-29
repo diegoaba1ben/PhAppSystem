@@ -11,7 +11,7 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class AreaRepository : GenericRepository<Area>, IAreaRepository
     {
-        public AreaRepository(PhAppUserDbContext context) : base(context) { }
+        public AreaRepository(PhAppUserDbContext context, ILogger<AreaRepository> logger) : base(context, logger) { }
 
         public async Task<Area?> BuscarPorNombreAsync(string nombre)
         {

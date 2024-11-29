@@ -9,7 +9,7 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
     public class PensionRepository : GenericRepository<Pension>, IPensionRepository
     {
-        public PensionRepository(PhAppUserDbContext context) : base(context) { }
+        public PensionRepository(PhAppUserDbContext context, ILogger<PensionRepository> logger) : base(context, logger) { }
 
         /// <summary>
         /// Verifica si ya existe un registro con el mismo número de afiliación en pensión.

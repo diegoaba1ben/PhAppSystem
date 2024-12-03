@@ -16,8 +16,8 @@ namespace PhAppUser.Api.Controllers
 
         public GenericController(IGenericRepository<T> repository, ILogger<GenericController<T>> logger)
         {
-            _repository = repository;
-            _logger = logger;
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         // Obtener todos los elementos
@@ -34,7 +34,6 @@ namespace PhAppUser.Api.Controllers
                 _logger.LogError(ex, "Error al obtener todos los elementos del repositorio.");
                 return StatusCode(500, "Ocurrió un error al procesar su solicitud.");
             }
-
         }
 
         // Crear un nuevo elemento
@@ -59,7 +58,6 @@ namespace PhAppUser.Api.Controllers
                 return StatusCode(500, "Ocurrió un error al procesar su solicitud.");
             }
         }
-
 
         // Actualizar un elemento existente
         [HttpPut("{id}")]
@@ -91,30 +89,29 @@ namespace PhAppUser.Api.Controllers
             }
         }
 
-
         // Eliminar un elemento por ID
         [HttpDelete("{id}")]
-public async Task<ActionResult> Delete(Guid id)
-{
-    try
-    {
-        var existingEntity = await _repository.GetByIdAsync(id);
-        if (existingEntity == null)
+        public async Task<ActionResult> Delete(Guid id)
         {
-            _logger.LogWarning("Intento de eliminación fallido: No se encontró la entidad con ID {Id} en {EntityName}.", id, typeof(T).Name);
-            return NotFound($"No se encontró la entidad con ID {id}.");
+            try
+            {
+                var existingEntity = await _repository.GetByIdAsync(id);
+                if (existingEntity == null)
+                {
+                    _logger.LogWarning("Intento de eliminación fallido: No se encontró la entidad con ID {Id} en {EntityName}.", id, typeof(T).Name);
+                    return NotFound($"No se encontró la entidad con ID {id}.");
+                }
+
+                await _repository.DeleteAsync(id);
+                _logger.LogInformation("Registro eliminado exitosamente en {EntityName} con ID {Id}.", typeof(T).Name, id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar el registro en {EntityName} con ID {Id}.", typeof(T).Name, id);
+                return StatusCode(500, "Ocurrió un error al procesar su solicitud.");
+            }
         }
-
-        await _repository.DeleteAsync(id);
-        _logger.LogInformation("Registro eliminado exitosamente en {EntityName} con ID {Id}.", typeof(T).Name, id);
-        return NoContent();
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error al eliminar el registro en {EntityName} con ID {Id}.", typeof(T).Name, id);
-        return StatusCode(500, "Ocurrió un error al procesar su solicitud.");
     }
 }
 
-    }
-}

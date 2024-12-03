@@ -1,11 +1,12 @@
 using System;
-using PhAppUser.Domain.Entities;
 
 namespace PhAppUser.Application.DTOs
 {
-    public class SaludDto : CuentaUsuarioDto
+    public class SaludDto
     {
-        public string Numero { get; set; } = string.Empty;
-        public string RazonSocialSalud { get; set; } = string.Empty;
+        public Guid Id { get; set; } // Identificador único de la afiliación
+        public string Numero { get; set; } = string.Empty; // Número de afiliación
+        public string RazonSocialSalud { get; set; } = string.Empty; // Nombre de la entidad de salud
+        public Guid CuentaUsuarioId { get; set; } // Relación con CuentaUsuario
     }
 }

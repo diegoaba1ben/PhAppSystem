@@ -17,6 +17,7 @@ namespace PhAppUser.Domain.Builders
             _cuentaUsuario = new CuentaUsuario();
         }
 
+        #region Métodos de Configuración Básica
         public CuentaUsuarioBuilder GenerarNuevoId()
         {
             _cuentaUsuario.Id = Guid.NewGuid();
@@ -70,22 +71,12 @@ namespace PhAppUser.Domain.Builders
             _cuentaUsuario.Email = email;
             return this;
         }
+        #endregion
 
+        #region Métodos de Configuración Avanzada
         public CuentaUsuarioBuilder ConEsActivo(bool esActivo)
         {
             _cuentaUsuario.EsActivo = esActivo;
-            return this;
-        }
-
-        public CuentaUsuarioBuilder ConFechaRegistro(DateTime fechaRegistro)
-        {
-            _cuentaUsuario.FechaRegistro = fechaRegistro;
-            return this;
-        }
-
-        public CuentaUsuarioBuilder ConFechaInactivacion(DateTime? fechaInactivacion)
-        {
-            _cuentaUsuario.FechaInactivacion = fechaInactivacion;
             return this;
         }
 
@@ -140,78 +131,57 @@ namespace PhAppUser.Domain.Builders
         public CuentaUsuarioBuilder ConAfiliacion(Afiliacion afiliacion, int? diasPendientes = null)
         {
             _cuentaUsuario.Afiliacion = afiliacion;
-            _cuentaUsuario.DiasPendientes = diasPendientes;
+            _cuentaUsuario.DiasPendientes = afiliacion == Afiliacion.Parcial ? diasPendientes : null;
             return this;
         }
 
-        public CuentaUsuarioBuilder ConDiasPendientes(int? diasPendientes)
-        {
-            _cuentaUsuario.DiasPendientes = diasPendientes;
-            return this;
-        }
-
-        public CuentaUsuarioBuilder ConFechaCreacion(DateTime fechaCreacion)
-        {
-            _cuentaUsuario.FechaCreacion = fechaCreacion;
-            return this;
-        }
-        // Métodos de auditoría a Afiliación.
         public CuentaUsuarioBuilder ConIntento(int intentos)
         {
-            if (intentos > 2)
-            {
-                _cuentaUsuario.Intento = intentos;
-                _cuentaUsuario.Bloqueado = intentos > 2;
-            }
+            _cuentaUsuario.Intento = intentos;
+            _cuentaUsuario.Bloqueado = intentos > 2;
             return this;
         }
+
         public CuentaUsuarioBuilder ConBloqueado(bool bloqueado)
         {
             _cuentaUsuario.Bloqueado = bloqueado;
             return this;
         }
 
+        // Métodos para Configurar Salud y Pensión
+        public CuentaUsuarioBuilder ConSalud(Salud salud)
+        {
+            _cuentaUsuario.Salud = salud;
+            return this;
+        }
+
+        public CuentaUsuarioBuilder ConPension(Pension pension)
+        {
+            _cuentaUsuario.Pension = pension;
+            return this;
+        }
+        #endregion
+
         public CuentaUsuario Build()
         {
-            //Validacioines centralizadas
-            if (!CuentaUsuarioCustomValidations.ValidarSujetoRetencion(_cuentaUsuario))
-            {
-                throw new InvalidOperationException("El campo Sujeto Retención debe definirse para empleados.");
-            }
-
-            if (!CuentaUsuarioCustomValidations.ValidarRazonSocIdTrib(_cuentaUsuario))
-            {
-                throw new InvalidOperationException("Los prestadores de servicios deben incluir Razón Social y Tipo de Identificación Tributaria.");
-            }
-
+            // Validaciones Centralizadas
             if (!CuentaUsuarioCustomValidations.ValidarAfiliacion(_cuentaUsuario))
             {
-                throw new InvalidOperationException("Días pendientes es obligatorio para usuarios con afiliación parcial.");
-            }
-
-            if (!CuentaUsuarioCustomValidations.ValidarFechaInactivacion(_cuentaUsuario))
-            {
-                throw new InvalidOperationException("La fecha de inactivación no puede ser anterior a la fecha de registro.");
+                throw new InvalidOperationException("La afiliación no es válida.");
             }
 
             if (!CuentaUsuarioCustomValidations.ValidarEstadoUsuario(_cuentaUsuario))
             {
-                throw new InvalidOperationException("Un usuario no puede estar activo y bloqueado al mismo tiempo.");
+                throw new InvalidOperationException("El estado del usuario no es consistente.");
             }
 
-            if (!CuentaUsuarioCustomValidations.ValidarPerfilesArea(_cuentaUsuario))
+            if (_cuentaUsuario.Afiliacion == Afiliacion.Completa && (_cuentaUsuario.Salud == null || _cuentaUsuario.Pension == null))
             {
-                throw new InvalidOperationException("Todos los perfiles asociados al usuario deben contener un área administrativa asociada.");
+                throw new InvalidOperationException("La afiliación completa requiere tanto salud como pensión.");
             }
 
-            if (!CuentaUsuarioCustomValidations.ValidarPerfilesRoles(_cuentaUsuario))
-            {
-                throw new InvalidOperationException("Todos los perfiles asociados al usuario deben contener roles asociados.");
-            }
-
-            // Retornar el objeto construido
+            // Retornar la cuenta construida
             return _cuentaUsuario;
-
         }
     }
 }

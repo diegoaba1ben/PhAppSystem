@@ -1,4 +1,3 @@
-using PhAppUser.Application.DTOs;
 using PhAppUser.Domain.Entities;
 using PhAppUser.Domain.Enums;
 
@@ -24,7 +23,7 @@ namespace PhAppUser.Domain.Validators
         }
 
         /// <summary>
-        /// Valida que, si el usuario tiene afiliación parcial, se especifiquen días pendientes mayores a cero.
+        /// Valida las reglas de afiliación para el usuario.
         /// </summary>
         public static bool ValidarAfiliacion(CuentaUsuario usuario)
         {
@@ -32,6 +31,12 @@ namespace PhAppUser.Domain.Validators
             {
                 return usuario.DiasPendientes.HasValue && usuario.DiasPendientes > 0;
             }
+
+            if (usuario.Afiliacion == Afiliacion.Completa)
+            {
+                return usuario.Salud != null && usuario.Pension != null;
+            }
+
             return true;
         }
 
@@ -79,5 +84,14 @@ namespace PhAppUser.Domain.Validators
         {
             return !await existeIdentificacionAsync(usuario.Identificacion, usuario.TipoId);
         }
+
+        /// <summary>
+        /// Valida que el usuario tenga afiliación completa, ambos campos (Salud y Pensión) estén presentes.
+        /// </summary>
+        public static bool ValidarSaludYPension(CuentaUsuario usuario)
+        {
+            return usuario.Afiliacion != Afiliacion.Completa || (usuario.Salud != null && usuario.Pension != null);
+        }
     }
 }
+

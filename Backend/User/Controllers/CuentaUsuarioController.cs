@@ -2,12 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using PhAppUser.Domain.Entities;
 using PhAppUser.Domain.Enums;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using PhAppUser.Infrastructure.Repositories.Implementations;
 using PhAppUser.Application.DTOs;
-
 
 namespace PhAppUser.Controllers
 {
@@ -18,18 +13,16 @@ namespace PhAppUser.Controllers
         private readonly ICuentaUsuarioRepository _cuentaUsuarioRepository;
         private readonly ISaludRepository _saludRepository;
         private readonly IPensionRepository _pensionRepository;
-        private readonly IPerfilRepository _perfilRepository;
 
         public CuentaUsuarioController(
             ICuentaUsuarioRepository cuentaUsuarioRepository,
-            ISaludRepository  saludRepository,
+            ISaludRepository saludRepository,
             IPensionRepository pensionRepository,
             IPerfilRepository perfilRepository)
         {
             _cuentaUsuarioRepository = cuentaUsuarioRepository ?? throw new ArgumentNullException(nameof(cuentaUsuarioRepository));
-            _saludRepository = _saludRepository ?? throw new ArgumentNullException(nameof(saludRepository));
-            _pensionRepository = _pensionRepository ?? throw new ArgumentNullException(nameof(pensionRepository));
-            _perfilRepository = _perfilRepository ?? throw new ArgumentNullException(nameof(perfilRepository));
+            _saludRepository = saludRepository ?? throw new ArgumentNullException(nameof(saludRepository));
+            _pensionRepository = pensionRepository ?? throw new ArgumentNullException(nameof(pensionRepository));
 
         }
 
@@ -96,165 +89,83 @@ namespace PhAppUser.Controllers
             var usuarios = await _cuentaUsuarioRepository.GetUsuariosAfiliacionPendienteAsync();
             return Ok(usuarios);
         }
+
+        // Inactivar usuario
         [HttpPut("{id}/inactivar")]
         public async Task<IActionResult> InactivarUsuario(Guid id, [FromBody] DateTime fechaInactivacion)
         {
             try
             {
-                await _cuentaUsuarioRepository.InactivarUsuarioAsync(id, fechaInactivacion);
-                return NoContent(); // Código 204
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { mensaje = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
-            }
-        }
-        [HttpPut("{id}/inactivar-relaciones")]
-        public async Task<IActionResult> InactivarUsuarioConRelaciones(Guid id, [FromBody] DateTime fechaInactivacion)
-        {
-            try
-            {
-                // Obtener usuario
                 var usuario = await _cuentaUsuarioRepository.GetByIdAsync(id);
+
                 if (usuario == null)
                 {
                     return NotFound(new { mensaje = $"Usuario con ID {id} no encontrado." });
                 }
 
-                // Validar intentos y afiliación
-                if (usuario.Afiliacion == Afiliacion.Parcial && usuario.Intento >= 2)
-                {
-                    // Obtener afiliaciones relacionadas
-                    var afiliacionSalud = await _saludRepository.GetByIdAsync(id);
-                    var afiliacionPension = await _pensionRepository.GetByIdAsync(id);
+                usuario.InactivarUsuario(fechaInactivacion);
+                await _cuentaUsuarioRepository.UpdateAsync(usuario);
 
-                    // Verificar ausencia de números de afiliación
-                    bool saludIncompleta = afiliacionSalud == null || string.IsNullOrEmpty(afiliacionSalud.Numero);
-                    bool pensionIncompleta = afiliacionPension == null || string.IsNullOrEmpty(afiliacionPension.Numero);
-
-                    if (saludIncompleta || pensionIncompleta)
-                    {
-                        // Proceder con la inactivación del usuario
-                        usuario.EsActivo = false;
-                        usuario.FechaInactivacion = fechaInactivacion;
-                        await _cuentaUsuarioRepository.UpdateAsync(usuario);
-
-                        // Inactivar Salud
-                        if (afiliacionSalud != null)
-                        {
-                            afiliacionSalud.EsActivo = false;
-                            afiliacionSalud.FechaInactivacion = fechaInactivacion;
-                            await _saludRepository.UpdateAsync(afiliacionSalud);
-                        }
-
-                        // Inactivar Pensión
-                        if (afiliacionPension != null)
-                        {
-                            afiliacionPension.EsActivo = false;
-                            afiliacionPension.FechaInactivacion = fechaInactivacion;
-                            await _pensionRepository.UpdateAsync(afiliacionPension);
-                        }
-
-                        // Desvincular perfiles asociados
-                        var perfilesRelacionados = await _perfilRepository.ObtenerPerfilesConUsuariosAsync();
-                        foreach (var perfil in perfilesRelacionados.Where(p => p.CuentaUsuarios.Any(cu => cu.Id == id)))
-                        {
-                            perfil.CuentaUsuarios = perfil.CuentaUsuarios.Where(cu => cu.Id != id).ToList();
-                            await _perfilRepository.UpdateAsync(perfil);
-                        }
-
-                        return Ok(new { mensaje = "Usuario y sus relaciones inactivados correctamente debido a la falta de afiliación." });
-                    }
-                }
-
-                return BadRequest(new
-                {
-                    mensaje = "El usuario no cumple con las condiciones para ser inactivado en este caso."
-                });
+                return Ok(new { message = "Usuario y sus afiliaciones inactivados correctamente." });
             }
             catch (Exception ex)
             {
-                Serilog.Log.Error(ex, "Error al inactivar el usuario con ID {Id} y sus relaciones", id);
-                return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
+                return StatusCode(500, new { message = "Error interno del servidor.", detalle = ex.Message });
             }
         }
-        // Reactivación del usuario por ingresar el número de afiliación faltante.
-        [HttpPost("{id}/reactivar")]
+
+        // Reactivar usuario
+        // Reactivar usuario
+        [HttpPut("{id}/reactivar")]
         public async Task<IActionResult> ReactivarUsuario(Guid id, [FromBody] ReactivacionRequest request)
         {
             try
             {
-                // Obtener el usuario por ID
                 var usuario = await _cuentaUsuarioRepository.GetByIdAsync(id);
 
-                if (id == Guid.Empty)
-                {
-                    return BadRequest(new {mensaje = $"El ID del usuario no puede estar vacío." });
-                }
                 if (usuario == null)
                 {
                     return NotFound(new { mensaje = $"Usuario con ID {id} no encontrado." });
                 }
 
-                // Validación: El usuario debe estar bloqueado
-                if (!usuario.Bloqueado)
-                {
-                    return BadRequest(new { mensaje = "El usuario no está bloqueado." });
-                }
+                usuario.ReactivarUsuario();
 
-                // Actualizar Salud
+                // Actualizar afiliaciones si es necesario
                 if (!string.IsNullOrEmpty(request.NumeroSalud))
                 {
-                    var afiliacionSalud = await _saludRepository.GetByIdAsync(id);
+                    var afiliacionSalud = await _saludRepository.GetByIdAsync(usuario.Id);
+                    afiliacionSalud?.ActualizarEstado(true);
                     if (afiliacionSalud != null)
-                    {
                         afiliacionSalud.Numero = request.NumeroSalud;
-                        afiliacionSalud.EsActivo = true;
-                        await _saludRepository.UpdateAsync(afiliacionSalud);
-                    }
+                    await _saludRepository.UpdateAsync(afiliacionSalud!);
                 }
 
-                // Actualizar Pensión
                 if (!string.IsNullOrEmpty(request.NumeroPension))
                 {
-                    var afiliacionPension = await _pensionRepository.GetByIdAsync(id);
+                    var afiliacionPension = await _pensionRepository.GetByIdAsync(usuario.Id);
+                    afiliacionPension?.ActualizarEstado(true);
                     if (afiliacionPension != null)
-                    {
                         afiliacionPension.Numero = request.NumeroPension;
-                        afiliacionPension.EsActivo = true;
-                        await _pensionRepository.UpdateAsync(afiliacionPension);
-                    }
+                    await _pensionRepository.UpdateAsync(afiliacionPension!);
                 }
 
-                // Reactivar usuario
-                usuario.EsActivo = true;
-                usuario.Bloqueado = false;
-                usuario.Intento = 0; //Aquí se reinician los intentos o plazos fallidos.
                 await _cuentaUsuarioRepository.UpdateAsync(usuario);
-
-                return Ok(new { mensaje = "Usuario reactivado exitosamente." });
+                return Ok(new { mensaje = "Usuario y sus afiliaciones reactivados correctamente." });
             }
             catch (Exception ex)
             {
-                Serilog.Log.Error(ex, "Error al intentar reactivar usuario con ID {Id}", id);
-                return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
+                return StatusCode(500, new { mensaje = "Error interno del servidor.", detalle = ex.Message });
             }
         }
-        /// <summary>
-        /// Obtiene el reporte de usuarios inactivos.
-        /// </summary>
+
+        // Obtener usuarios inactivos
         [HttpGet("usuarios-inactivos")]
         public async Task<ActionResult<IEnumerable<UsuarioInactivoDto>>> GetUsuariosInactivosAsync()
         {
             try
             {
                 var usuariosInactivos = await _cuentaUsuarioRepository.GetUsuariosInactivosAsync();
-
-                if (usuariosInactivos == null || !usuariosInactivos.Any())
+                if (!usuariosInactivos.Any())
                 {
                     return NotFound(new { mensaje = "No se encontraron usuarios inactivos." });
                 }
@@ -263,14 +174,9 @@ namespace PhAppUser.Controllers
             }
             catch (Exception ex)
             {
-                Serilog.Log.Error(ex, "Error al obtener el reporte de usuarios inactivos.");
-                return StatusCode(500, new
-                {
-                    mensaje = "Ocurrió un error inesperado al obtener el reporte de usuarios inactivos.",
-                    detalle = ex.Message
-                });
+                return StatusCode(500, new { mensaje = "Ocurrió un error inesperado al obtener usuarios inactivos.", detalle = ex.Message });
             }
         }
-
     }
 }
+

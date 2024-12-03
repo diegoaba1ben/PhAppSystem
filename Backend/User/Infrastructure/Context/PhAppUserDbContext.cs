@@ -77,7 +77,17 @@ namespace PhAppUser.Infrastructure.Context
                 .WithMany()
                 .HasForeignKey(p => p.AreaId)
                 .IsRequired();
-        }        // Métodos adicionales (si es necesario)
+            // Relación uno a uno entre CuentaUsuario y Salud
+            modelBuilder.Entity<CuentaUsuario>()
+                .HasOne(cu => cu.Salud)
+                .WithOne(s => s.CuentaUsuario)
+                .HasForeignKey<Salud>(s => s.CuentaUsuarioId);
+            // Relación entre CuentaUsuario y Pension
+            modelBuilder.Entity<CuentaUsuario>()
+                .HasOne(cu => cu.Pension)
+                .WithOne(p => p.CuentaUsuario)
+                .HasForeignKey<Pension>(p => p.CuentaUsuarioId);
+        }        
     }
 }
 

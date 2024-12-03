@@ -1,11 +1,12 @@
 using System;
-using PhAppUser.Domain.Entities;
 
 namespace PhAppUser.Application.DTOs
 {
-    public class PensionDto : CuentaUsuarioDto
+    public class PensionDto
     {
-        public string Numero { get; set; } = string.Empty;
-        public string RazonSocialPension { get; set; } = string.Empty;
+        public Guid Id { get; set; } // Identificador único de la afiliación
+        public string Numero { get; set; } = string.Empty; // Número de afiliación
+        public string RazonSocialPension { get; set; } = string.Empty; // Nombre de la entidad de pensión
+        public Guid CuentaUsuarioId { get; set; } // Relación con CuentaUsuario
     }
 }

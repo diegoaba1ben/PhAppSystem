@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PhAppUser.Domain.Entities;
 using PhAppUser.Infrastructure.Context;

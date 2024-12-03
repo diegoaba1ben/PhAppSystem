@@ -1,7 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using PhAppUser.Application.DTOs;
 using PhAppUser.Domain.Entities;
 using PhAppUser.Domain.Enums;
 

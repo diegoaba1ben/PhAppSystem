@@ -22,7 +22,7 @@ namespace PhAppUser.Domain.Builders
         }
         public PensionBuilder ConRazonSocialPension(string razonSocialPension)
         {
-            _pension.RazonSocial = razonSocialPension;
+            _pension.RazonSocialPension = razonSocialPension;
             return this;
         }
 

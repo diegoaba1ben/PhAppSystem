@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.IdentityModel.Tokens;
 using PhAppUser.Application.DTOs;
 using PhAppUser.Domain.Enums;
 
@@ -30,6 +31,39 @@ namespace PhAppUser.Domain.Entities
         public bool EsActivo { get; internal set; } = true;
         public DateTime FechaRegistro { get; internal set; } = DateTime.Now;
         public DateTime? FechaInactivacion { get; internal set; }
+
+        /// <summary>
+        /// Inactiva al usuario y actualiza sus afiliaciones asociadas (Salud y Pensión).
+        /// </summary>
+        /// <param name="fechaInactivación">Fecha de inactivación del usuario.</param>
+        public void InactivarUsuario(DateTime fechaInactivación)
+        {
+            if (!EsActivo)
+                throw new InvalidOperationException("El usuario ya está inactivo.");
+
+            FechaInactivacion = fechaInactivación;
+            EsActivo = false;
+
+            // Propagar el estado a las afiliaciones asociadas
+            Salud?.ActualizarEstado(false);
+            Pension?.ActualizarEstado(false);
+        }
+
+        /// <summary>
+        /// Reactiva al usuario y actualiza sus afiliaciones asociadas (Salud y Pensión).
+        /// </summary>
+        public void ReactivarUsuario()
+        {
+            if (EsActivo)
+                throw new InvalidOperationException("El usuario ya está activo.");
+
+            FechaInactivacion = null; // Se elimina la fecha de inactivación
+            EsActivo = true;
+
+            // Propagar el estado a las afiliaciones asociadas
+            Salud?.ActualizarEstado(true);
+            Pension?.ActualizarEstado(true);
+        }
         #endregion
 
         #region Atributos de identificación de login
@@ -55,205 +89,78 @@ namespace PhAppUser.Domain.Entities
         public int? DiasPendientes { get; internal set; }
         public DateTime FechaCreacion { get; internal set; } = DateTime.Now;
 
-        // Atributos de auditoría para Afiliación
-        public int Intento { get; internal set; } = 0; // Número de intentos permitidos antes de bloquear al usuario.
-        public bool Bloqueado { get; internal set; } = false; // Si el usuario está bloqueado por exceder los intentos.
+        public int Intento { get; internal set; } = 0;
+        public bool Bloqueado { get; internal set; } = false;
+        public Salud? Salud { get; internal set; }
+        public Pension? Pension { get; internal set; }
         #endregion
 
-        // Navegación inversa a Perfiles (uno a muchos)
         public ICollection<Perfil> Perfiles { get; internal set; } = new List<Perfil>();
 
-        // Constructor privado para forzar el uso del builder
         internal CuentaUsuario() { }
 
-        // Builder interno para la clase
         public class Builder
         {
             private readonly CuentaUsuario _usuario = new CuentaUsuario();
 
-            #region Métodos concatenados para los atributos básicos para un usuario
-
-            public Builder GenerarNuevoId()
-            {
-                _usuario.Id = Guid.NewGuid();
-                return this;
-            }
-            public Builder ConNombresCompletos(string nombres)
-            {
-                _usuario.NombresCompletos = nombres;
-                return this;
-            }
-
-            public Builder ConApellidosCompletos(string apellidos)
-            {
-                _usuario.ApellidosCompletos = apellidos;
-                return this;
-            }
-
-            public Builder ConTipoId(TipoId tipoId)
-            {
-                _usuario.TipoId = tipoId;
-                return this;
-            }
-
-            public Builder ConIdentificacion(string identificacion)
-            {
-                _usuario.Identificacion = identificacion;
-                return this;
-            }
-            #endregion
-
-            #region Métodos concatenados para los atributos de ubicación
-            public Builder ConDireccion(string direccion)
-            {
-                _usuario.Direccion = direccion;
-                return this;
-            }
-
-            public Builder ConCiudad(string ciudad)
-            {
-                _usuario.Ciudad = ciudad;
-                return this;
-            }
-            public Builder ConTelefono(string telefono)
-            {
-                _usuario.Telefono = telefono;
-                return this;
-            }
-            public Builder ConEmail(string email)
-            {
-                _usuario.Email = email;
-                return this;
-            }
-            #endregion
-
-            #region Métodos concatenados para el estado de un usuario
-            public Builder ConEsActivo(bool esActivo)
-            {
-                _usuario.EsActivo = esActivo;
-                return this;
-            }
-            public Builder ConFechaRegistro(DateTime fechaRegistro)
-            {
-                _usuario.FechaRegistro = fechaRegistro;
-                return this;
-            }
-            public Builder ConFechaInactivacion(DateTime fechaInactivacion)
-            {
-                _usuario.FechaInactivacion = fechaInactivacion;
-                return this;
-            }
-
-            #endregion
-
-            #region Métodos concatenados para la identificación de loggin
-            public Builder ConNombreUsuario(string nombreUsuario)
-            {
-                _usuario.NombreUsuario = nombreUsuario;
-                return this;
-            }
-            public Builder ConPassword(string password)
-            {
-                _usuario.Password = password;
-                return this;
-            }
-            #endregion
-            #region Métodos concatenados para determinar el tipo de usuario
-            public Builder ConTipoCuenta(TipoCuenta tipoCuenta)
-            {
-                _usuario.TipoCuenta = tipoCuenta;
-                return this;
-            }
-            public Builder ConTarjProf(string tarjProf)
-            {
-                _usuario.TarjProf = tarjProf;
-                return this;
-            }
-            #endregion
-
-            #region Métodos concatenados para el tipo usuario y manejo tributarios
-            public Builder ConTipoContrato(TipoContrato tipoContrato)
-            {
-                _usuario.TipoContrato = tipoContrato;
-                return this;
-            }
-            public Builder ConSujetoRetencion(bool? sujetoRetencion)
-            {
-                if (_usuario.TipoContrato == TipoContrato.Empleado)
-                {
-                    _usuario.SujetoRetencion = sujetoRetencion;
-                }
-                return this;
-            }
-            public Builder ConTipoIdTrib(TipoIdTrib? tipoIdTrib)
-            {
-                if (_usuario.TipoContrato == TipoContrato.PrestadorDeServicios)
-                {
-                    _usuario.TipoIdTrib = tipoIdTrib;
-                }
-                return this;
-            }
-            public Builder ConRazonsocial(string razonsocial)
-            {
-                if (_usuario.TipoContrato == TipoContrato.PrestadorDeServicios)
-                {
-                    _usuario.RazonSocial = razonsocial;
-                }
-                return this;
-            }
-            #endregion
-
-            #region Métodos concatenados para los atributos de seguridad social
+            #region Métodos concatenados
+            public Builder GenerarNuevoId() { _usuario.Id = Guid.NewGuid(); return this; }
+            public Builder ConNombresCompletos(string nombres) { _usuario.NombresCompletos = nombres; return this; }
             public Builder ConAfiliacion(Afiliacion afiliacion, int? diasPendientes = null)
             {
                 _usuario.Afiliacion = afiliacion;
-                _usuario.DiasPendientes = afiliacion == Afiliacion.Parcial? diasPendientes: null;
+                _usuario.DiasPendientes = afiliacion == Afiliacion.Parcial ? diasPendientes : null;
                 return this;
             }
-            public Builder ConDiasPendientes(int? diasPendientes)
+            public Builder ConSalud(Salud? salud)
             {
-                _usuario.DiasPendientes = diasPendientes;
+                _usuario.Salud = salud;
                 return this;
             }
-            public Builder ConFechaCreacion(DateTime fechaCreacion)
+            public Builder ConPension(Pension? pension)
             {
-                _usuario.FechaCreacion = fechaCreacion;
+                _usuario.Pension = pension;
                 return this;
             }
-            // Métodos para auditoría de Afiliación
-            public Builder ConIntentos(int intentos)
+            public Builder ConInactivarUsuario(DateTime fechaInactivacion)
             {
-                if (intentos < 0)
-                {
-                    throw new ArgumentException("Los intentos no pueden ser negativos.");
-                }
+                _usuario.InactivarUsuario(fechaInactivacion);
+                return this;
+            }
+            public Builder ConReactivarUsuario()
+            {
+                _usuario.ReactivarUsuario();
+                return this;
+            }
 
-                _usuario.Intento = intentos;
-                _usuario.Bloqueado = intentos > 2;
-
-                return this;
-            }
-            public Builder ConBloqueado(bool bloqueado)
-            {
-                _usuario.Bloqueado = bloqueado;
-                return this;
-            }
             #endregion
-            // Constructor final para construir la instancia
+
             public CuentaUsuario Build()
             {
-                //Validación mínima para asegurar la consistencia del objeto
-                if( _usuario.Bloqueado && _usuario.EsActivo)
-                {
-                    throw new InvalidOperationException("Un usuario bloqueado no puede estar activo.");
-                }
-                if(_usuario.Afiliacion == Afiliacion.Parcial && (!_usuario.DiasPendientes.HasValue || _usuario.DiasPendientes <= 0))
-                {
-                    throw new InvalidOperationException("Para una afiliación parcial debe definirse un plazo mayor a 0 días");
-                }
+                ValidarConsistenciaAfiliacion();
+                ValidarEstado();
                 return _usuario;
             }
+
+            #region Métodos de validación privados
+            private void ValidarConsistenciaAfiliacion()
+            {
+                if (_usuario.Afiliacion == Afiliacion.Completa)
+                {
+                    if (_usuario.Salud == null || _usuario.Pension == null)
+                        throw new InvalidOperationException("Para afiliación completa, se requieren Salud y Pensión.");
+                }
+
+                if (_usuario.Afiliacion == Afiliacion.Parcial && (!_usuario.DiasPendientes.HasValue || _usuario.DiasPendientes <= 0))
+                    throw new InvalidOperationException("Para afiliación parcial, se debe definir un plazo mayor a 0 días.");
+            }
+
+            private void ValidarEstado()
+            {
+                if (_usuario.Bloqueado && _usuario.EsActivo)
+                    throw new InvalidOperationException("Un usuario bloqueado no puede estar activo.");
+            }
+            #endregion
         }
     }
 }
-

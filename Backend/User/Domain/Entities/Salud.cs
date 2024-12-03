@@ -5,57 +5,103 @@ using PhAppUser.Domain.Enums;
 namespace PhAppUser.Domain.Entities
 {
     /// <summary>
-    /// Representa los atributos específicos de las Entidades de Salud
+    /// Representa la afiliación a una entidad de salud.
     /// </summary>
-    public class Salud : CuentaUsuario
+    public class Salud
     {
-        #region Propiedades específicas de salud       
-        // Número de identificación tributaria
-        public string Numero { get; set; } = string.Empty;
+        [Key]
+        public Guid Id { get; internal set; }
 
-        // Nombre de la entidad prestadora de salud
-        public string RazonSocialSalud { get; set; } = string.Empty;
-        #endregion
+        public string Numero { get; internal set; } = string.Empty; // Número de afiliación
 
-        // Constructor privado para forzar el uso del builder
-        internal Salud() {}
+        public string RazonSocialSalud { get; internal set; } = string.Empty; // Nombre de la entidad de salud
 
-        // Método estático para obtener un builder de Salud
-        public static SaludBuilder CrearBuilder()
+        public TipoIdTrib TipoIdTrib { get; internal set; } // Identificación tributaria de la entidad
+
+        public string IdentificacionTributaria { get; internal set; } = string.Empty; // NIT o RUT de la entidad
+
+        public bool EsActivo { get; internal set; } = true; // Estado inicial predeterminado
+
+        /// <summary>
+        /// Actualiza el estado de afiliación a salud.
+        /// </summary>
+        public void ActualizarEstado(bool estado)
         {
-            return new SaludBuilder();
-        }
-    }
-
-    // Clase separada para el builder de Salud
-    public class SaludBuilder
-    {
-        private readonly Salud _salud = new Salud();
-
-        public SaludBuilder ConNumero(string numero)
-        {
-            _salud.Numero = numero;
-            return this;
+            EsActivo = estado;
         }
 
-        public SaludBuilder ConRazonSocialSalud(string razonSocialSalud)
-        {
-            _salud.RazonSocialSalud = razonSocialSalud;
-            return this;
-        }
+        // Relación con CuentaUsuario
+        public Guid CuentaUsuarioId { get; internal set; } // FK hacia CuentaUsuario
+        public CuentaUsuario CuentaUsuario { get; internal set; } = null!;
 
-        // Método para construir la instancia final
-        public Salud Build()
+        // Constructor privado para uso exclusivo del Builder
+        internal Salud() { }
+
+        // Builder interno para crear instancias de Salud
+        public class Builder
         {
-            if(string.IsNullOrEmpty(_salud.Numero))
+            private readonly Salud _salud = new Salud();
+
+            public Builder GenerarNuevoId()
             {
-                throw new InvalidOperationException("El número de afiliación es obligatorio.");
+                _salud.Id = Guid.NewGuid();
+                return this;
             }
-            if(string.IsNullOrEmpty(_salud.RazonSocialSalud))
+
+            public Builder ConNumero(string numero)
             {
-                throw new InvalidOperationException("La razón social del prestador en salud es obligatorio");
+                if (string.IsNullOrWhiteSpace(numero))
+                    throw new ArgumentException("El número de afiliación no puede estar vacío.");
+                _salud.Numero = numero;
+                return this;
             }
-            return _salud;
+
+            public Builder ConRazonSocialSalud(string razonSocialSalud)
+            {
+                if (string.IsNullOrWhiteSpace(razonSocialSalud))
+                    throw new ArgumentException("La razón social no puede estar vacía.");
+                _salud.RazonSocialSalud = razonSocialSalud;
+                return this;
+            }
+
+            public Builder ConTipoIdTrib(TipoIdTrib tipoIdTrib)
+            {
+                _salud.TipoIdTrib = tipoIdTrib;
+                return this;
+            }
+
+            public Builder ConIdentificacionTributaria(string identificacion)
+            {
+                if (string.IsNullOrWhiteSpace(identificacion))
+                    throw new ArgumentException("La identificación tributaria no puede estar vacía.");
+                _salud.IdentificacionTributaria = identificacion;
+                return this;
+            }
+
+            public Builder ConCuentaUsuarioId(Guid cuentaUsuarioId)
+            {
+                _salud.CuentaUsuarioId = cuentaUsuarioId;
+                return this;
+            }
+
+            /// <summary>
+            /// Inicializa el estado de afiliación (activo/inactivo).
+            /// </summary>
+            /// <param name="estado">Estado de la afiliación, predeterminado a activo (true).</param>
+            /// <returns>El builder con el estado actualizado.</returns>
+            public Builder InicializarEsActivo(bool estado = true)
+            {
+                _salud.EsActivo = estado;
+                return this;
+            }
+
+            public Salud Build()
+            {
+                if (string.IsNullOrWhiteSpace(_salud.Numero) || string.IsNullOrWhiteSpace(_salud.RazonSocialSalud))
+                    throw new InvalidOperationException("Los datos básicos de la afiliación a salud deben completarse.");
+
+                return _salud;
+            }
         }
     }
 }

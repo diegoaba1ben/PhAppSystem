@@ -3,10 +3,8 @@ using PhAppUser.Domain.Entities;
 using PhAppUser.Infrastructure.Repositories.Interfaces;
 using PhAppUser.Infrastructure.Context;
 using PhAppUser.Domain.Enums;
-using Microsoft.Extensions.Logging;
 using PhAppUser.Infrastructure.Helpers;
 using PhAppUser.Application.DTOs;
-using Microsoft.AspNetCore.Diagnostics;
 
 namespace PhAppUser.Infrastructure.Repositories.Implementations
 {
@@ -109,12 +107,29 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
             $"Error al obtener usuarios por última fecha de inicio de sesión desde {date}");
         }
 
+        public async Task<IEnumerable<CuentaUsuario>> GetUsuarioAfiliacionCompletaAsync()
+        {
+            return await ExceptionHandler.HandleAsync(async () =>
+            {
+                return await _context.CuentasUsuarios
+                    .Include(cu => cu.Salud)
+                    .Include(cu => cu.Pension)
+                    .Where(cu => cu.Salud != null && cu.Pension != null)
+                    .ToListAsync();
+            },
+            _logger, "Error al obtener usuarios con afiliación completa.");
+        }
+
         public async Task<IEnumerable<CuentaUsuario>> GetUsuariosAfiliacionPendienteAsync()
         {
             return await ExceptionHandler.HandleAsync(async () =>
             {
                 return await _context.CuentasUsuarios
-                    .Where(cu => cu.Afiliacion == Afiliacion.Parcial && cu.DiasPendientes.HasValue && cu.DiasPendientes > 0)
+                    .Include(cu => cu.Salud)
+                    .Include(cu => cu.Pension)
+                    .Where(cu => cu.Afiliacion == Afiliacion.Parcial &&
+                    (cu.Salud == null || cu.Pension == null) &&
+                    cu.DiasPendientes.HasValue && cu.DiasPendientes > 0)
                     .ToListAsync();
             },
             _logger,
@@ -170,8 +185,28 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
             }, _logger, nameof(GetUsuariosInactivosAsync));
         }
 
-
-
+        public async Task DesbloqUsuXAfiliacionAsync(Guid usuarioId)
+        {
+            {
+                await ExceptionHandler.HandleAsync(async () =>
+                {
+                    var usuario = await _context.CuentasUsuarios
+                        .Include(cu => cu.Salud)
+                        .Include(cu =>cu.Pension)
+                        .FirstOrDefaultAsync(cu => cu.Id == usuarioId);
+                    if(usuario == null)
+                    throw new KeyNotFoundException("No se encontró el usuario con ID {usuarioId}");
+                    if(usuario.Bloqueado && usuario.Salud != null && usuario.Pension != null)
+                    {
+                        usuario.Bloqueado = false;
+                        usuario.Intento = 0;
+                        _context.CuentasUsuarios.Update(usuario);
+                        await _context.SaveChangesAsync();
+                    }
+                },
+                _logger, $"Error al intentar desbloquear el usuario con ID{usuarioId}");  
+            }   
+        }
         public async Task<bool> ExisteIdentificacionAsync(string identificacion)
         {
             if (string.IsNullOrWhiteSpace(identificacion))
@@ -185,15 +220,5 @@ namespace PhAppUser.Infrastructure.Repositories.Implementations
             _logger,
             $"Error al validar si la identificación ya existe: {identificacion}");
         }
-
-        Task<IEnumerable<UsuarioInactivoDto>> ICuentaUsuarioRepository.GetUsuariosInactivosAsync()
-        {
-            throw new NotImplementedException();
-        }
-    }
+    }    
 }
-
-
-
-
-

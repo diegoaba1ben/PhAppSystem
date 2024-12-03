@@ -1,10 +1,12 @@
 using System;
 using PhAppUser.Domain.Entities;
+using PhAppUser.Domain.Enums;
+using PhAppUser.Domain.Validators;
 
 namespace PhAppUser.Domain.Builders
 {
     /// <summary>
-    /// Builder para la creación de instancias de Salud
+    /// Builder para la creación de instancias de Salud.
     /// </summary>
     public class SaludBuilder
     {
@@ -14,33 +16,57 @@ namespace PhAppUser.Domain.Builders
         {
             _salud = new Salud();
         }
-        // Métodos de cada atributo
-        public SaludBuilder ConNumero(string numero)
+
+        #region Métodos de Configuración
+
+        public SaludBuilder ConCuentaUsuarioId(Guid cuentaUsuarioId)
         {
-            _salud.Numero = numero;
-            return this;
-        }
-        public SaludBuilder ConRazonSocialSalud(string razonSocialSalud)
-        {
-            _salud.RazonSocialSalud = razonSocialSalud;
+            _salud.CuentaUsuarioId = cuentaUsuarioId;
             return this;
         }
 
-        // Constructor de la clase
+        public SaludBuilder ConNumeroAfiliacion(string numeroAfiliacion)
+        {
+            if (string.IsNullOrWhiteSpace(numeroAfiliacion))
+                throw new ArgumentException("El número de afiliación no puede ser nulo o vacío.");
+
+            _salud.Numero = numeroAfiliacion;
+            return this;
+        }
+
+        public SaludBuilder ConTipoIdTrib(TipoIdTrib tipoIdTrib)
+        {
+            _salud.TipoIdTrib = tipoIdTrib;
+            return this;
+        }
+
+        public SaludBuilder ConRazonSocial(string razonSocial)
+        {
+            if (string.IsNullOrWhiteSpace(razonSocial))
+                throw new ArgumentException("La razón social no puede ser nula o vacía.");
+
+            _salud.RazonSocialSalud = razonSocial;
+            return this;
+        }
+
+
+        #endregion
+
+        #region Validaciones y Construcción
+
         public Salud Build()
         {
-            if(string.IsNullOrEmpty(_salud.Numero))
-            {
-                throw new InvalidOperationException("El número de afiliación es obligatorio.");
-            }
-            if(string.IsNullOrEmpty(_salud.RazonSocialSalud))
-            {
-                throw new InvalidOperationException("La razón social del prestador en salud es obligatorio");
-            }
+
+            if (_salud.TipoIdTrib == TipoIdTrib.NoAplica)
+                throw new InvalidOperationException("El tipo de identificación tributaria debe ser válido para entidades de salud.");
+
+            // Devuelve la instancia construida
             return _salud;
         }
-    }
 
+        #endregion
+    }
 }
+
 
 

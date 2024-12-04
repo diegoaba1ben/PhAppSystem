@@ -13,6 +13,7 @@ namespace PhAppUser.Controllers
         private readonly ICuentaUsuarioRepository _cuentaUsuarioRepository;
         private readonly ISaludRepository _saludRepository;
         private readonly IPensionRepository _pensionRepository;
+        private readonly IPerfilRepository _perfilRepository;
 
         public CuentaUsuarioController(
             ICuentaUsuarioRepository cuentaUsuarioRepository,
@@ -23,6 +24,7 @@ namespace PhAppUser.Controllers
             _cuentaUsuarioRepository = cuentaUsuarioRepository ?? throw new ArgumentNullException(nameof(cuentaUsuarioRepository));
             _saludRepository = saludRepository ?? throw new ArgumentNullException(nameof(saludRepository));
             _pensionRepository = pensionRepository ?? throw new ArgumentNullException(nameof(pensionRepository));
+            _perfilRepository = perfilRepository ?? throw new ArgumentNullException(nameof(perfilRepository));
 
         }
 
@@ -41,6 +43,26 @@ namespace PhAppUser.Controllers
             var usuariosActivos = await _cuentaUsuarioRepository.GetUsuariosActivosAsync();
             return Ok(usuariosActivos);
         }
+        // Usuarios inactivos
+        [HttpGet("usuarios-inactivos")]
+        public async Task<ActionResult<IEnumerable<UsuarioInactivoDto>>> GetUsuariosInactivosAsync()
+        {
+            try
+            {
+                var usuariosInactivos = await _cuentaUsuarioRepository.GetUsuariosInactivosAsync();
+                if (!usuariosInactivos.Any())
+                {
+                    return NotFound(new { message = "No se encontraron usuarios inactivos." });
+                }
+
+                return Ok(usuariosInactivos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error inesperado al obtener usuarios inactivos.", detalle = ex.Message });
+            }
+        }
+
 
         // Obtener usuarios por perfil
         [HttpGet("perfil/{perfilId}")]
@@ -94,87 +116,74 @@ namespace PhAppUser.Controllers
         [HttpPut("{id}/inactivar")]
         public async Task<IActionResult> InactivarUsuario(Guid id, [FromBody] DateTime fechaInactivacion)
         {
-            try
+            var usuario = await _cuentaUsuarioRepository.GetByIdAsync(id);
+            if (usuario == null)
             {
-                var usuario = await _cuentaUsuarioRepository.GetByIdAsync(id);
-
-                if (usuario == null)
-                {
-                    return NotFound(new { mensaje = $"Usuario con ID {id} no encontrado." });
-                }
-
-                usuario.InactivarUsuario(fechaInactivacion);
-                await _cuentaUsuarioRepository.UpdateAsync(usuario);
-
-                return Ok(new { message = "Usuario y sus afiliaciones inactivados correctamente." });
+                return NotFound(new { message = $"Usuario con ID {id} no encontrado." });
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error interno del servidor.", detalle = ex.Message });
-            }
+
+            usuario.InactivarUsuario(fechaInactivacion);
+            await _cuentaUsuarioRepository.UpdateAsync(usuario);
+
+            return Ok(new { message = "Usuario inactivado correctamente." });
         }
 
-        // Reactivar usuario
-        // Reactivar usuario
         [HttpPut("{id}/reactivar")]
         public async Task<IActionResult> ReactivarUsuario(Guid id, [FromBody] ReactivacionRequest request)
         {
-            try
+            // Obtener el usuario por ID
+            var usuario = await _cuentaUsuarioRepository.GetByIdAsync(id);
+            if (usuario == null)
             {
-                var usuario = await _cuentaUsuarioRepository.GetByIdAsync(id);
-
-                if (usuario == null)
-                {
-                    return NotFound(new { mensaje = $"Usuario con ID {id} no encontrado." });
-                }
-
-                usuario.ReactivarUsuario();
-
-                // Actualizar afiliaciones si es necesario
-                if (!string.IsNullOrEmpty(request.NumeroSalud))
-                {
-                    var afiliacionSalud = await _saludRepository.GetByIdAsync(usuario.Id);
-                    afiliacionSalud?.ActualizarEstado(true);
-                    if (afiliacionSalud != null)
-                        afiliacionSalud.Numero = request.NumeroSalud;
-                    await _saludRepository.UpdateAsync(afiliacionSalud!);
-                }
-
-                if (!string.IsNullOrEmpty(request.NumeroPension))
-                {
-                    var afiliacionPension = await _pensionRepository.GetByIdAsync(usuario.Id);
-                    afiliacionPension?.ActualizarEstado(true);
-                    if (afiliacionPension != null)
-                        afiliacionPension.Numero = request.NumeroPension;
-                    await _pensionRepository.UpdateAsync(afiliacionPension!);
-                }
-
-                await _cuentaUsuarioRepository.UpdateAsync(usuario);
-                return Ok(new { mensaje = "Usuario y sus afiliaciones reactivados correctamente." });
+                return NotFound(new { message = $"Usuario con ID {id} no encontrado." });
             }
-            catch (Exception ex)
+
+            // Reactivar el usuario
+            usuario.ReactivarUsuario();
+
+            // Actualizar afiliaciones de salud y pensión
+            await ActualizaAfiliacionSalud(usuario.Id, request.NumeroSalud);
+            await ActualizaAfiliacionPension(usuario.Id, request.NumeroPension);
+
+            // Guardar cambios en el usuario
+            await _cuentaUsuarioRepository.UpdateAsync(usuario);
+
+            return Ok(new { message = "Usuario y sus afiliaciones reactivados correctamente." });
+        }
+
+        private async Task ActualizaAfiliacionSalud(Guid usuarioId, string? numeroSalud)
+        {
+            if (!string.IsNullOrEmpty(numeroSalud))
             {
-                return StatusCode(500, new { mensaje = "Error interno del servidor.", detalle = ex.Message });
+                // Obtener afiliación de salud por ID de usuario
+                var afiliacionSalud = await _saludRepository.GetByIdAsync(usuarioId);
+                if (afiliacionSalud != null)
+                {
+                    // Actualizar estado y número de afiliación
+                    afiliacionSalud.ActualizarEstado(true);
+                    afiliacionSalud.Numero = numeroSalud;
+
+                    // Guardar cambios
+                    await _saludRepository.UpdateAsync(afiliacionSalud);
+                }
             }
         }
 
-        // Obtener usuarios inactivos
-        [HttpGet("usuarios-inactivos")]
-        public async Task<ActionResult<IEnumerable<UsuarioInactivoDto>>> GetUsuariosInactivosAsync()
+        private async Task ActualizaAfiliacionPension(Guid usuarioId, string? numeroPension)
         {
-            try
+            if (!string.IsNullOrEmpty(numeroPension))
             {
-                var usuariosInactivos = await _cuentaUsuarioRepository.GetUsuariosInactivosAsync();
-                if (!usuariosInactivos.Any())
+                // Obtener afiliación de pensión por ID de usuario
+                var afiliacionPension = await _pensionRepository.GetByIdAsync(usuarioId);
+                if (afiliacionPension != null)
                 {
-                    return NotFound(new { mensaje = "No se encontraron usuarios inactivos." });
-                }
+                    // Actualizar estado y número de afiliación
+                    afiliacionPension.ActualizarEstado(true);
+                    afiliacionPension.Numero = numeroPension;
 
-                return Ok(usuariosInactivos);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { mensaje = "Ocurrió un error inesperado al obtener usuarios inactivos.", detalle = ex.Message });
+                    // Guardar cambios
+                    await _pensionRepository.UpdateAsync(afiliacionPension);
+                }
             }
         }
     }

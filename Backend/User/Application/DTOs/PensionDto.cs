@@ -8,5 +8,6 @@ namespace PhAppUser.Application.DTOs
         public string Numero { get; set; } = string.Empty; // Número de afiliación
         public string RazonSocialPension { get; set; } = string.Empty; // Nombre de la entidad de pensión
         public Guid CuentaUsuarioId { get; set; } // Relación con CuentaUsuario
+        public bool EsActivo { get; set; } // Indicador de activo o inactivo
     }
 }

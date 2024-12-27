@@ -95,7 +95,10 @@ namespace PhAppUser.Domain.Entities
         public Pension? Pension { get; internal set; }
         #endregion
 
+        #region Manejo de relaciones
         public ICollection<Perfil> Perfiles { get; internal set; } = new List<Perfil>();
+        public RepLegal? RepLegal { get; internal set; }
+        #endregion
 
         internal CuentaUsuario() { }
 

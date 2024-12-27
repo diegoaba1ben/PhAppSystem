@@ -11,10 +11,10 @@ namespace PhAppUser.Infrastructure.Context
         public required DbSet<CuentaUsuario> CuentasUsuarios { get; set; }
         public required DbSet<Salud> Saluds { get; set; }
         public required DbSet<Pension> Pensiones { get; set; }
-        public required DbSet<RepLegal> RepLegals{ get; set; }
+        public required DbSet<RepLegal> RepLegals { get; set; }
         public required DbSet<Permiso> Permisos { get; set; }
         public required DbSet<Rol> Roles { get; set; }
-        public required DbSet<Area> Areas{ get; set; }
+        public required DbSet<Area> Areas { get; set; }
         public required DbSet<Perfil> Perfiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -87,7 +87,12 @@ namespace PhAppUser.Infrastructure.Context
                 .HasOne(cu => cu.Pension)
                 .WithOne(p => p.CuentaUsuario)
                 .HasForeignKey<Pension>(p => p.CuentaUsuarioId);
-        }        
+            // Relación entre CuentaUsuario y RepLegal
+            modelBuilder.Entity<CuentaUsuario>()
+                .HasOne(cu => cu.RepLegal)
+                .WithOne(rl => rl.CuentaUsuario)
+                .HasForeignKey<RepLegal>(rl => rl.CuentaUsuarioId);
+        }
     }
 }
 

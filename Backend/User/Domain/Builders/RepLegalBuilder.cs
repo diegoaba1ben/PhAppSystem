@@ -4,9 +4,9 @@ using PhAppUser.Domain.Entities;
 namespace PhAppUser.Domain.Builders
 {
     /// <summary>
-    /// Builder para la creación de instancias de RepLegal, proporcionando flexibilidad adicional.
+    /// Builder externo para construir instancias de RepLegal, extendiendo el builder base.
     /// </summary>
-    public class RepLegalBuilder
+    public class RepLegalBuilder : CuentaUsuarioBuilder
     {
         private readonly RepLegal _repLegal;
 
@@ -33,9 +33,25 @@ namespace PhAppUser.Domain.Builders
             return this;
         }
 
-        // Método para construir la instancia final de RepLegal
-        public RepLegal Build()
+        public RepLegalBuilder ConCuentaUsuario(CuentaUsuario cuentaUsuario)
         {
+            _repLegal.CuentaUsuario = cuentaUsuario ?? throw new ArgumentNullException(nameof(cuentaUsuario));
+            _repLegal.CuentaUsuarioId = cuentaUsuario.Id;
+            return this;
+        }
+
+        /// <summary>
+        /// Método para construir la instancia final de RepLegal.
+        /// </summary>
+        /// <returns>Una instancia de RepLegal completa.</returns>
+        public new RepLegal Build()
+        {
+            // Validar la coherencia de los datos antes de construir.
+            if (_repLegal.FechaInicio >= _repLegal.FechaFinal)
+            {
+                throw new InvalidOperationException("La fecha de inicio debe ser anterior a la fecha final.");
+            }
+
             return _repLegal;
         }
     }

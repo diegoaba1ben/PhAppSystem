@@ -1,6 +1,4 @@
 using System;
-using PhAppUser.Domain.Enums;
-using PhAppUser.Domain.Entities;
 using FluentValidation;
 
 namespace PhAppUser.Application.DTOs
@@ -17,23 +15,23 @@ namespace PhAppUser.Application.DTOs
         public string TipoContrato { get; set; } = string.Empty;
     }
     public class UsuarioDatosBasicosQDtoValidator : AbstractValidator<UsuarioDatosBasicosQDto>
-{
-    public UsuarioDatosBasicosQDtoValidator()
     {
-        RuleFor(x => x.NombresCompletos)
-            .MinimumLength(3).When(x => !string.IsNullOrEmpty(x.NombresCompletos))
-            .WithMessage("El nombre debe tener al menos 3 caracteres.");
+        public UsuarioDatosBasicosQDtoValidator()
+        {
+            RuleFor(x => x.NombresCompletos)
+                .MinimumLength(3).When(x => !string.IsNullOrEmpty(x.NombresCompletos))
+                .WithMessage("El nombre debe tener al menos 3 caracteres.");
 
-        RuleFor(x => x.ApellidosCompletos)
-            .MinimumLength(3).When(x => !string.IsNullOrEmpty(x.ApellidosCompletos))
-            .WithMessage("El apellido debe tener al menos 3 caracteres.");
+            RuleFor(x => x.ApellidosCompletos)
+                .MinimumLength(3).When(x => !string.IsNullOrEmpty(x.ApellidosCompletos))
+                .WithMessage("El apellido debe tener al menos 3 caracteres.");
 
-        RuleFor(x => x.Identificacion)
-            .MinimumLength(3).When(x => !string.IsNullOrEmpty(x.Identificacion))
-            .WithMessage("La identificación debe tener al menos 3 caracteres.")
-            .Matches(@"^\d+$").When(x => !string.IsNullOrEmpty(x.Identificacion))
-            .WithMessage("La identificación debe contener solo dígitos.");
+            RuleFor(x => x.Identificacion)
+                .MinimumLength(3).When(x => !string.IsNullOrEmpty(x.Identificacion))
+                .WithMessage("La identificación debe tener al menos 3 caracteres.")
+                .Matches(@"^\d+$").When(x => !string.IsNullOrEmpty(x.Identificacion))
+                .WithMessage("La identificación debe contener solo dígitos.");
+        }
     }
-}
 
 }
